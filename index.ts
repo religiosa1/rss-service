@@ -9,14 +9,13 @@ import { feedController } from "./src/controllers/feedController.ts";
 import { feedItemController } from "./src/controllers/feedItemController.ts";
 import { API_KEY_SECURITY_SCHEMA_NAME } from "./src/models/apiKeyAuthSecurity.ts";
 import { API_KEY_HEADER_NAME } from "./src/constants.ts";
+import { port } from "./src/globalContext.ts";
 
 const app = new Hono();
 
 console.log("Running migrations...");
 await migrate();
 
-const DEFAULT_PORT = 3000;
-const port = parseInt(process.env.PORT ?? "", 10) || DEFAULT_PORT;
 console.log(`RSS Server is running on port ${port}`);
 
 app.use(logger());
@@ -59,5 +58,5 @@ serve({
 		url.protocol = req.headers.get("x-forwarded-proto") ?? url.protocol;
 		return app.fetch(new Request(url, req));
 	},
-	port,
+	port: port,
 });

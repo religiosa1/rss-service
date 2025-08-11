@@ -2,12 +2,14 @@ import { Hono } from "hono";
 import z from "zod";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/zod";
-import { feedUpdateSchema, feedPreviewSchema, feedSchema } from "../models/feed.ts";
+import { feedUpdateSchema, feedSchema } from "../models/feed.ts";
 import { slugSchema } from "../models/slug.ts";
 import { apiKeyAuthSecurity } from "../models/apiKeyAuthSecurity.ts";
 import { apiKeyAuth } from "../middleware/apiKeyAuth.ts";
+import * as feedRepository from "../repositories/feed.ts";
+import * as feedService from "../services/feedService.ts";
 
-const feedController = new Hono();
+export const feedController = new Hono();
 
 const tags = ["feed"];
 
@@ -21,13 +23,14 @@ feedController.get(
 			200: {
 				description: "Successful response",
 				content: {
-					"application/json": { schema: resolver(z.array(feedPreviewSchema)) },
+					"application/json": { schema: resolver(z.array(feedSchema)) },
 				},
 			},
 		},
 	}),
 	async (c) => {
-		c.json("TODO");
+		const data = await feedRepository.listFeeds();
+		c.json(data);
 	}
 );
 
@@ -45,6 +48,9 @@ feedController.post(
 					"application/json": { schema: resolver(feedSchema) },
 				},
 			},
+			400: {
+				description: "Bad request",
+			},
 			403: {
 				description: "Forbidden",
 			},
@@ -56,7 +62,9 @@ feedController.post(
 	apiKeyAuth,
 	validator("json", feedUpdateSchema),
 	async (c) => {
-		throw new Error("TODO");
+		const payload = c.req.valid("json");
+		const item = await feedRepository.createFeed(payload);
+		c.json(item, 201);
 	}
 );
 
@@ -73,6 +81,12 @@ feedController.get(
 					"application/rss+xml": {},
 				},
 			},
+			400: {
+				description: "Bad request",
+			},
+			404: {
+				description: "No such feed",
+			},
 		},
 	}),
 	validator(
@@ -82,7 +96,11 @@ feedController.get(
 		})
 	),
 	async (c) => {
-		throw new Error("TODO");
+		const { feedSlug } = c.req.valid("param");
+		const data = await feedService.getFeed(feedSlug);
+		c.text(data, 200, {
+			"Content-Type": " application/rss+xml; charset=UTF-8",
+		});
 	}
 );
 
@@ -99,6 +117,9 @@ feedController.patch(
 				content: {
 					"application/json": { schema: resolver(feedSchema) },
 				},
+			},
+			400: {
+				description: "Bad request",
 			},
 			404: {
 				description: "Feed with the provided slug doesn't exist",
@@ -117,7 +138,10 @@ feedController.patch(
 	),
 	validator("json", feedUpdateSchema.partial()),
 	async (c) => {
-		throw new Error("TODO");
+		const { feedSlug } = c.req.valid("param");
+		const payload = c.req.valid("json");
+		const item = feedRepository.updateFeed(feedSlug, payload);
+		c.json(item);
 	}
 );
 
@@ -145,8 +169,7 @@ feedController.delete(
 		})
 	),
 	async (c) => {
-		throw new Error("TODO");
+		const { feedSlug } = c.req.valid("param");
+		await feedRepository.deleteFeed(feedSlug);
 	}
 );
-
-export { feedController };

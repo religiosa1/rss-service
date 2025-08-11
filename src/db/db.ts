@@ -5,4 +5,5 @@ import { pathToFileURL } from "node:url";
 
 export const db = drizzle(pathToFileURL(process.env.DB_FILE_NAME ?? DEFAULT_DB_NAME).toString(), {
 	schema,
+	casing: "snake_case",
 });

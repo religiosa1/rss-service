@@ -7,7 +7,7 @@ import { slugSchema } from "../models/slug.ts";
 import { apiKeyAuthSecurity } from "../models/apiKeyAuthSecurity.ts";
 import { apiKeyAuth } from "../middleware/apiKeyAuth.ts";
 
-const feedItemController = new Hono();
+export const feedItemController = new Hono();
 
 const tags = ["feed-item"];
 
@@ -20,6 +20,9 @@ feedItemController.get(
 		responses: {
 			200: {
 				description: "Successful response",
+			},
+			400: {
+				description: "Bad request",
 			},
 			404: {
 				description: "Feed with the provided slug doesn't exist",
@@ -50,6 +53,9 @@ feedItemController.post(
 				content: {
 					"application/json": { schema: resolver(feedItemSchema) },
 				},
+			},
+			400: {
+				description: "Bad request",
 			},
 			404: {
 				description: "Feed with the provided slug doesn't exist",
@@ -82,6 +88,9 @@ feedItemController.patch(
 				content: {
 					"application/json": { schema: resolver(feedItemSchema) },
 				},
+			},
+			400: {
+				description: "Bad request",
 			},
 			404: {
 				description: "Feed or entry with the provided slug doesn't exist",
@@ -116,6 +125,9 @@ feedItemController.delete(
 			204: {
 				description: "Deleted",
 			},
+			400: {
+				description: "Bad request",
+			},
 			404: {
 				description: "Feed or entry with the provided slug doesn't exist",
 			},
@@ -133,5 +145,3 @@ feedItemController.delete(
 		throw new Error("TODO");
 	}
 );
-
-export { feedItemController };
