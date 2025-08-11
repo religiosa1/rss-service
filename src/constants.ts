@@ -16,3 +16,15 @@ export const COPYRIGHT_LENGTH = 512;
 
 /** The max url length in webkit-based browsers */
 export const URL_LENGTH = 2083;
+
+/** Max amount of feed items returned in a RSS feed or REST-request */
+export const MAX_FEED_ITEMS = 100;
+
+/**
+ * Additional amount of latest feedItems stored in the DB for feed, in case
+ * some feed was modified or updated to be an older date, so we have some
+ * buffer of data.
+ *
+ * Total amount of data stored will be MAX_FEED_ITEMS + MAX_FEED_ITEMS_ARCHIVED
+ */
+export const MAX_FEED_ITEMS_ARCHIVED = MAX_FEED_ITEMS * 2;

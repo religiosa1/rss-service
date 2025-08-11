@@ -6,6 +6,7 @@ import { feedItemSchema, feedItemUpdateSchema } from "../models/feedItem.ts";
 import { slugSchema } from "../models/slug.ts";
 import { apiKeyAuthSecurity } from "../models/apiKeyAuthSecurity.ts";
 import { apiKeyAuth } from "../middleware/apiKeyAuth.ts";
+import * as feedItemRepository from "../repositories/feedItem.ts";
 
 export const feedItemController = new Hono();
 
@@ -36,7 +37,9 @@ feedItemController.get(
 		})
 	),
 	async (c) => {
-		throw new Error("TODO");
+		const { feedSlug } = c.req.valid("param");
+		const data = await feedItemRepository.listFeedItems(feedSlug);
+		c.json(data);
 	}
 );
 
@@ -71,7 +74,10 @@ feedItemController.post(
 	),
 	validator("json", feedItemUpdateSchema),
 	async (c) => {
-		throw new Error("TODO");
+		const { feedSlug } = c.req.valid("param");
+		const payload = c.req.valid("json");
+		const item = await feedItemRepository.createFeedItem(feedSlug, payload);
+		c.json(item, 201);
 	}
 );
 
@@ -110,7 +116,10 @@ feedItemController.patch(
 	),
 	validator("json", feedItemUpdateSchema.partial()),
 	async (c) => {
-		throw new Error("TODO");
+		const { feedSlug, feedItemSlug } = c.req.valid("param");
+		const payload = c.req.valid("json");
+		const item = await feedItemRepository.updateFeedItem(feedSlug, feedItemSlug, payload);
+		c.json(item);
 	}
 );
 
@@ -142,6 +151,7 @@ feedItemController.delete(
 		})
 	),
 	async (c) => {
-		throw new Error("TODO");
+		const { feedSlug, feedItemSlug } = c.req.valid("param");
+		await feedItemRepository.deleteFeedItem(feedSlug, feedItemSlug);
 	}
 );

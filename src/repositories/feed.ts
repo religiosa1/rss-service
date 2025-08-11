@@ -1,8 +1,8 @@
 import { getTableColumns, eq, sql } from "drizzle-orm";
-import { db } from "../db/db.ts";
-import { schema } from "../db/index.ts";
+import { db, schema } from "../db/index.ts";
 import type { FeedModel, FeedUpdateModel } from "../models/feed.ts";
 import { publicUrl } from "../globalContext.ts";
+import { raise } from "../utils/raise.ts";
 
 // TODO sql errors handling and conversion to http errors;
 
@@ -57,8 +57,4 @@ function dbItemToFeedModel(item: FeebDbModel): FeedModel {
 		link: new URL(`/${encodeURIComponent(item.slug)}`, publicUrl).toString(),
 		updatedAt: new Date(item.updatedAt),
 	};
-}
-
-function raise(message: string, error: ErrorConstructor = Error): never {
-	throw new error(message);
 }
