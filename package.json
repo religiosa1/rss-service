@@ -1,0 +1,39 @@
+{
+	"name": "rss-service",
+	"version": "0.0.1",
+	"description": "Microservice for providing RSS feeds",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/religiosa1/rss-service"
+	},
+	"keywords": [
+		"rss"
+	],
+	"license": "MIT",
+	"author": "Viacheslav Azarov <public@religiosa.ru>",
+	"type": "module",
+	"main": "index.ts",
+	"scripts": {
+		"start": "node ./index.ts",
+		"dev": "node --watch ./index.ts",
+		"test": "node --test **/*.test.{js,ts}",
+		"make-migration": "drizzle-kit generate"
+	},
+	"dependencies": {
+		"@hono/node-server": "^1.18.1",
+		"@hono/zod-validator": "^0.4.3",
+		"@libsql/client": "^0.15.10",
+		"@scalar/hono-api-reference": "^0.9.13",
+		"drizzle-orm": "^0.44.4",
+		"feed": "^5.1.0",
+		"hono": "^4.9.0",
+		"hono-openapi": "^0.4.8",
+		"zod": "^3.25.76",
+		"zod-openapi": "^4.2.4"
+	},
+	"devDependencies": {
+		"@types/node": "^24.2.1",
+		"drizzle-kit": "^0.31.4",
+		"typescript": "^5.9.2"
+	}
+}
