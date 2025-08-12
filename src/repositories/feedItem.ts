@@ -4,14 +4,16 @@ import { db, schema } from "../db/index.ts";
 import type { FeedItemModel, FeedItemUpdateModel } from "../models/feedItem.ts";
 import { raise } from "../utils/raise.ts";
 
-export async function listFeedItems(feedSlug: string): Promise<FeedItemModel[]> {
+export async function getFeedItems(feedSlug: string): Promise<FeedItemModel[]> {
 	const feedId = await getFeedIdBySlug(feedSlug);
-	return await db
-		.select()
-		.from(schema.feedItem)
-		.where(eq(schema.feedItem.feedId, feedId))
-		.orderBy(desc(schema.feedItem.date), schema.feedItem.id)
-		.limit(MAX_FEED_ITEMS);
+	const items = await getFeedItemsDbQuery(feedId).limit(MAX_FEED_ITEMS);
+	return items;
+}
+
+export async function getArchivedFeedItems(feedSlug: string): Promise<FeedItemModel[]> {
+	const feedId = await getFeedIdBySlug(feedSlug);
+	const items = await getFeedItemsDbQuery(feedId).offset(MAX_FEED_ITEMS);
+	return items;
 }
 
 export async function createFeedItem(feedSlug: string, values: FeedItemUpdateModel): Promise<FeedItemModel> {
@@ -97,4 +99,12 @@ function dbItemToFeedModel(feedSlug: string, item: FeedItemDbModel): FeedItemMod
 		...item,
 		link: new URL(`/feed/${encodeURIComponent(feedSlug)}/items/${encodeURIComponent(item.slug)}`).toString(),
 	};
+}
+
+function getFeedItemsDbQuery(feedId: number) {
+	return db
+		.select()
+		.from(schema.feedItem)
+		.where(eq(schema.feedItem.feedId, feedId))
+		.orderBy(desc(schema.feedItem.date), schema.feedItem.id);
 }

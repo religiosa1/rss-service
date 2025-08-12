@@ -1,7 +1,7 @@
 import { Feed } from "feed";
 import { readFeed } from "../repositories/feed.ts";
 import { generatorValue } from "../globalContext.ts";
-import { listFeedItems } from "../repositories/feedItem.ts";
+import { getFeedItems } from "../repositories/feedItem.ts";
 import { coerceNullish } from "../utils/coerceNullish.ts";
 
 export async function getFeed(feedSlug: string): Promise<string> {
@@ -20,7 +20,7 @@ export async function getFeed(feedSlug: string): Promise<string> {
 		author: dbFeed.author ? coerceNullish(dbFeed.author) : undefined,
 	});
 
-	const feedItems = await listFeedItems(feedSlug);
+	const feedItems = await getFeedItems(feedSlug);
 	for (const item of feedItems) {
 		feed.addItem({
 			title: item.title,
