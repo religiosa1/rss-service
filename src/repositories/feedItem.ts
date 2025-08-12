@@ -2,7 +2,7 @@ import { and, eq, desc, inArray } from "drizzle-orm";
 import { MAX_FEED_ITEMS, MAX_FEED_ITEMS_ARCHIVED } from "../constants.ts";
 import { db, schema } from "../db/index.ts";
 import type { FeedItemModel, FeedItemUpdateModel } from "../models/feedItem.ts";
-import { raise } from "../utils/raise.ts";
+import { mapDbError, raise } from "../utils/errors.ts";
 
 export async function getFeedItems(feedSlug: string): Promise<FeedItemModel[]> {
 	const feedId = await getFeedIdBySlug(feedSlug);
@@ -20,12 +20,15 @@ export async function createFeedItem(feedSlug: string, values: FeedItemUpdateMod
 	const ts = new Date();
 	return await db.transaction(async (tx) => {
 		const feedId = await getFeedIdBySlug(feedSlug, tx);
-		await tx.insert(schema.feedItem).values({
-			...values,
-			feedId,
-			createdAt: ts,
-			modifiedAt: ts,
-		});
+		await tx
+			.insert(schema.feedItem)
+			.values({
+				...values,
+				feedId,
+				createdAt: ts,
+				modifiedAt: ts,
+			})
+			.catch(mapDbError);
 
 		// Removing older items from archive
 		await tx.delete(schema.feedItem).where(
@@ -39,7 +42,7 @@ export async function createFeedItem(feedSlug: string, values: FeedItemUpdateMod
 					.offset(MAX_FEED_ITEMS + MAX_FEED_ITEMS_ARCHIVED)
 			)
 		);
-		const newItem = await readFeedItem(feedId, values.slug);
+		const newItem = await readModifiedFeedItem(feedId, values.slug);
 		return dbItemToFeedModel(feedSlug, newItem);
 	});
 }
@@ -53,8 +56,9 @@ export async function updateFeedItem(
 	await db
 		.update(schema.feedItem)
 		.set(values)
-		.where(and(eq(schema.feedItem.feedId, feedId), eq(schema.feedItem.slug, feedItemSlug)));
-	const item = await readFeedItem(feedId, feedItemSlug);
+		.where(and(eq(schema.feedItem.feedId, feedId), eq(schema.feedItem.slug, feedItemSlug)))
+		.catch(mapDbError);
+	const item = await readModifiedFeedItem(feedId, feedItemSlug);
 	return dbItemToFeedModel(feedSlug, item);
 }
 
@@ -79,18 +83,18 @@ async function getFeedIdBySlug(feedSlug: string, tx: MaybeTransaction = db): Pro
 			})
 			.from(schema.feed)
 			.where(eq(schema.feed.slug, feedSlug))
-			.get()) ?? raise("Unable to find feed with the provided slug");
+			.get()) ?? raise(404, "Unable to find feed with the provided slug");
 	return id;
 }
 
 type FeedItemDbModel = typeof schema.feedItem.$inferSelect;
-async function readFeedItem(feedId: number, slug: string, tx: MaybeTransaction = db): Promise<FeedItemDbModel> {
+async function readModifiedFeedItem(feedId: number, slug: string, tx: MaybeTransaction = db): Promise<FeedItemDbModel> {
 	const item =
 		(await tx
 			.select()
 			.from(schema.feedItem)
 			.where(and(eq(schema.feedItem.feedId, feedId), eq(schema.feedItem.slug, slug)))
-			.get()) ?? raise("Unable to find feed with provided slug and feedId");
+			.get()) ?? raise(500, "Unable to retrieve modified feed item from DB");
 	return item;
 }
 

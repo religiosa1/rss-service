@@ -2,9 +2,7 @@ import { getTableColumns, eq, sql } from "drizzle-orm";
 import { db, schema } from "../db/index.ts";
 import type { FeedModel, FeedUpdateModel } from "../models/feed.ts";
 import { publicUrl } from "../globalContext.ts";
-import { raise } from "../utils/raise.ts";
-
-// TODO sql errors handling and conversion to http errors;
+import { mapDbError, raise } from "../utils/errors.ts";
 
 export async function listFeeds(): Promise<FeedModel[]> {
 	const data = await getFeedFromDb();
@@ -13,21 +11,24 @@ export async function listFeeds(): Promise<FeedModel[]> {
 
 export async function readFeed(feedSlug: string): Promise<FeedModel> {
 	const item = await getFeedFromDb().where(eq(schema.feed.slug, feedSlug)).get();
-	return dbItemToFeedModel(item ?? raise("Unable to retrieve item"));
+	return dbItemToFeedModel(item ?? raise(500, "Unable to retrieve modified feed from DB"));
 }
 
 export async function createFeed(values: FeedUpdateModel): Promise<FeedModel> {
 	const ts = new Date();
-	await db.insert(schema.feed).values({
-		...values,
-		createdAt: ts,
-		modifiedAt: ts,
-	});
+	await db
+		.insert(schema.feed)
+		.values({
+			...values,
+			createdAt: ts,
+			modifiedAt: ts,
+		})
+		.catch(mapDbError);
 	return readFeed(values.slug);
 }
 
 export async function updateFeed(feedSlug: string, values: Partial<FeedUpdateModel>): Promise<FeedModel> {
-	await db.update(schema.feed).set(values).where(eq(schema.feed.slug, feedSlug));
+	await db.update(schema.feed).set(values).where(eq(schema.feed.slug, feedSlug)).catch(mapDbError);
 	return readFeed(feedSlug);
 }
 

@@ -130,6 +130,9 @@ feedItemController.post(
 			404: {
 				description: "Feed with the provided slug doesn't exist",
 			},
+			409: {
+				description: "Feed entry item with the same slug already exists in the feed",
+			},
 		},
 	}),
 	apiKeyAuth,
