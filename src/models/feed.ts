@@ -1,13 +1,14 @@
 import z from "zod";
 import { slugSchema } from "./slug.ts";
+import { authorScheme } from "./author.ts";
 import { FEED_DESC_LENGTH, FEED_TITLE_LENGTH, URL_LENGTH } from "../constants.ts";
 
 export const feedUpdateSchema = z.object({
 	slug: slugSchema,
 	title: z.string().max(FEED_TITLE_LENGTH),
 	description: z.string().max(FEED_DESC_LENGTH),
-	image: z.string().url().max(URL_LENGTH).nullable().optional(),
-	favicon: z.string().url().max(URL_LENGTH).nullable().optional(),
+	image: z.string().url().max(URL_LENGTH).nullish(),
+	favicon: z.string().url().max(URL_LENGTH).nullish(),
 	language: z
 		.string()
 		.min(2)
@@ -15,7 +16,8 @@ export const feedUpdateSchema = z.object({
 		.nullable()
 		.optional()
 		.describe("ISO 639 language or IETF language tag of the feed"),
-	copyright: z.string().max(512).nullable().optional(),
+	copyright: z.string().max(512).nullish(),
+	author: authorScheme.nullish(),
 });
 export type FeedUpdateModel = z.infer<typeof feedUpdateSchema>;
 

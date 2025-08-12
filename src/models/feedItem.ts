@@ -1,13 +1,7 @@
 import z from "zod";
 import { slugSchema } from "./slug.ts";
+import { authorScheme } from "./author.ts";
 import { FEED_ITEM_DESC_LENGTH, FEED_ITEM_TITLE_LENGTH, URL_LENGTH } from "../constants.ts";
-
-export const feedItemPreviewSchema = z.object({
-	id: z.number().int().positive(),
-	slug: slugSchema,
-	title: z.string().max(FEED_ITEM_TITLE_LENGTH),
-});
-export type FeedItemPreviewModel = z.infer<typeof feedItemPreviewSchema>;
 
 export const feedItemUpdateSchema = z.object({
 	slug: slugSchema,
@@ -15,8 +9,10 @@ export const feedItemUpdateSchema = z.object({
 	description: z.string().max(FEED_ITEM_DESC_LENGTH),
 	content: z.string(),
 	date: z.date({ coerce: true }),
-	image: z.string().url().max(URL_LENGTH).nullable().optional(),
-	// TODO: authors and contributors
+	link: z.string().url(),
+	image: z.string().url().max(URL_LENGTH).nullish(),
+	authors: z.array(authorScheme).nullish(),
+	contributors: z.array(authorScheme).nullish(),
 });
 export type FeedItemUpdateModel = z.infer<typeof feedItemUpdateSchema>;
 

@@ -1,10 +1,10 @@
 import { and, eq, desc, inArray } from "drizzle-orm";
 import { MAX_FEED_ITEMS, MAX_FEED_ITEMS_ARCHIVED } from "../constants.ts";
 import { db, schema } from "../db/index.ts";
-import type { FeedItemModel, FeedItemPreviewModel, FeedItemUpdateModel } from "../models/feedItem.ts";
+import type { FeedItemModel, FeedItemUpdateModel } from "../models/feedItem.ts";
 import { raise } from "../utils/raise.ts";
 
-export async function listFeedItems(feedSlug: string): Promise<FeedItemPreviewModel[]> {
+export async function listFeedItems(feedSlug: string): Promise<FeedItemModel[]> {
 	const feedId = await getFeedIdBySlug(feedSlug);
 	return await db
 		.select()

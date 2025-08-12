@@ -1,5 +1,6 @@
 import { index, integer, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
 import { desc } from "drizzle-orm/sql";
+import type { AuthorModel } from "../models/author.ts";
 
 export const feed = sqliteTable("feed", {
 	id: integer().primaryKey(),
@@ -10,7 +11,7 @@ export const feed = sqliteTable("feed", {
 	favicon: text(),
 	language: text(),
 	copyright: text(),
-	// TODO: author
+	author: text({ mode: "json" }).$type<AuthorModel>(),
 	createdAt: integer({ mode: "timestamp_ms" }).notNull(),
 	modifiedAt: integer({ mode: "timestamp_ms" }).notNull(),
 });
@@ -28,7 +29,9 @@ export const feedItem = sqliteTable(
 		content: text().notNull(),
 		date: integer({ mode: "timestamp_ms" }).notNull(),
 		image: text(),
-		// TODO: authors and contributors
+		link: text().notNull(),
+		authors: text({ mode: "json" }).$type<AuthorModel[]>(),
+		contributors: text({ mode: "json" }).$type<AuthorModel[]>(),
 		createdAt: integer({ mode: "timestamp_ms" }).notNull(),
 		modifiedAt: integer({ mode: "timestamp_ms" }).notNull(),
 	},
