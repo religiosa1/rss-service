@@ -48,7 +48,7 @@ feedItemController.get(
 	async (c) => {
 		const { feedSlug } = c.req.valid("param");
 		const data = await feedItemRepository.getFeedItems(feedSlug);
-		c.json(data);
+		return c.json(data);
 	}
 );
 
@@ -126,6 +126,9 @@ feedItemController.post(
 			},
 			400: {
 				description: "Bad request",
+			},
+			401: {
+				description: "Unauthorized",
 			},
 			404: {
 				description: "Feed with the provided slug doesn't exist",

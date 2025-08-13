@@ -99,7 +99,7 @@ feedController.get(
 		const { feedSlug } = c.req.valid("param");
 		const data = await feedService.getFeed(feedSlug);
 		return c.text(data, 200, {
-			"Content-Type": " application/rss+xml; charset=UTF-8",
+			"Content-Type": " application/rss+xml",
 		});
 	}
 );

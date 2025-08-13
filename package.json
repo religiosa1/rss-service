@@ -17,6 +17,7 @@
 		"start": "NODE_ENV=production node ./index.ts",
 		"dev": "node --watch ./index.ts",
 		"test": "NODE_ENV=test node --test-global-setup ./tests/setup.ts --test **/*.test.{js,ts}",
+		"test:update-snapshots": "NODE_ENV=test node --test-global-setup ./tests/setup.ts --test-update-snapshots  --test **/*.test.{js,ts}",
 		"make-migration": "drizzle-kit generate"
 	},
 	"dependencies": {

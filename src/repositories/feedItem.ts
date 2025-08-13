@@ -12,7 +12,8 @@ export async function getFeedItems(feedSlug: string): Promise<FeedItemModel[]> {
 
 export async function getArchivedFeedItems(feedSlug: string): Promise<FeedItemModel[]> {
 	const feedId = await getFeedIdBySlug(feedSlug);
-	const items = await getFeedItemsDbQuery(feedId).offset(MAX_FEED_ITEMS);
+	// offset without limit is invalid sqlite expression, but drizzle filters out limit(-1)
+	const items = await getFeedItemsDbQuery(feedId).limit(Number.MAX_SAFE_INTEGER).offset(MAX_FEED_ITEMS);
 	return items;
 }
 

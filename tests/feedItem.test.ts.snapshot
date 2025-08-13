@@ -1,0 +1,34 @@
+exports[`feed items > GET /feed/:feedSlug/items/ > retrieves a list of current items in a feed 1`] = `
+[
+  {
+    "id": 1,
+    "feedId": 1,
+    "slug": "test1",
+    "title": "feed item title",
+    "description": "feed item description",
+    "content": "blah",
+    "date": "2025-01-01T10:30:00.000Z",
+    "image": null,
+    "link": "http://example.com/test1",
+    "authors": null,
+    "contributors": null,
+    "createdAt": "2025-01-01T10:30:00.000Z",
+    "modifiedAt": "2025-01-01T10:30:00.000Z"
+  },
+  {
+    "id": 2,
+    "feedId": 1,
+    "slug": "test2",
+    "title": "feed item title",
+    "description": "feed item description",
+    "content": "blah",
+    "date": "2025-01-01T10:30:00.000Z",
+    "image": null,
+    "link": "http://example.com/test2",
+    "authors": null,
+    "contributors": null,
+    "createdAt": "2025-01-01T10:30:00.000Z",
+    "modifiedAt": "2025-01-01T10:30:00.000Z"
+  }
+]
+`;

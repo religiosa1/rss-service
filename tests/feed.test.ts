@@ -1,7 +1,11 @@
 import { before, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { unlinkSync } from "node:fs";
+
 import { DateMocker, mkTmpDbFile, type Jsonify } from "./helpers.ts";
 import { mockTimers } from "./setup.ts";
+import { makeMockFeedItem, mockFeedPayload, mockFeedResult } from "./mocks.ts";
+
 import type { FeedModel, FeedUpdateModel } from "../src/models/feed.ts";
 import { resetDbConnection } from "../src/db/db.ts";
 import { migrate } from "../src/db/migrate.ts";
@@ -9,15 +13,13 @@ import { app } from "../src/app.ts";
 import { API_KEY_HEADER_NAME } from "../src/constants.ts";
 import * as feedRepository from "../src/repositories/feed.ts";
 import * as feedItemRepository from "../src/repositories/feedItem.ts";
-import { makeMockFeedItem, mockFeedPayload, mockFeedResult } from "./mocks.ts";
-import { unlinkSync } from "node:fs";
 
 before(() => {
 	mockTimers();
 });
 
 beforeEach(async (t) => {
-	// ensurrring each test works with a clean in memory version of db.
+	// ensuring each test works with a clean in memory version of db.
 	// Initial idea was to run this in :memory:, but there's a bug with libsql
 	// https://github.com/tursodatabase/libsql-client-ts/issues/140
 	// So we're opting for temporary files instead.
@@ -84,6 +86,29 @@ describe("feed", () => {
 			}
 		});
 	}); // GET /feed
+
+	describe("GET /feed/:feedSlug", () => {
+		it("returns a rss feed", async (t) => {
+			await feedRepository.createFeed(mockFeedPayload);
+			using dateMocker = new DateMocker();
+			await feedItemRepository.createFeedItem(mockFeedPayload.slug, makeMockFeedItem("test1", dateMocker.advanceTime(1000)));
+			await feedItemRepository.createFeedItem(mockFeedPayload.slug, makeMockFeedItem("test2",  dateMocker.advanceTime(1000)));
+			const res = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}`);
+			assert.equal(res.status, 200);
+			assert.equal(res.headers.get("Content-Type"), "application/rss+xml");
+			t.assert.snapshot(await res.text());
+		});
+
+		it("returns 400 on invalid feedSlug param", async () => {
+			const res = await app.request(`/feed/$$$`);
+			assert.equal(res.status, 400);
+		})
+
+		it("returns 404 if non-existing feedSlug is specified", async () => {
+			const res = await app.request(`/feed/bad-slug`);
+			assert.equal(res.status, 404);
+		})
+	}); // GET /feed/:feedSlug
 
 	describe("POST /feed", () => {
 		it("creates a new feed item", async () => {
@@ -290,9 +315,6 @@ describe("feed", () => {
 			await feedRepository.createFeed(mockFeedPayload);
 			const resp = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}`, {
 				method: "DELETE",
-				headers: {
-					"Content-Type": "application/json",
-				},
 			});
 			assert.equal(resp.status, 204);
 			const feed = await feedRepository.readFeed(mockFeedPayload.slug);
@@ -303,9 +325,6 @@ describe("feed", () => {
 			await feedRepository.createFeed(mockFeedPayload);
 			const resp = await app.request(`/feed/bad-slug`, {
 				method: "DELETE",
-				headers: {
-					"Content-Type": "application/json",
-				},
 			});
 			assert.equal(resp.status, 404);
 		});
@@ -323,14 +342,11 @@ describe("feed", () => {
 					`/feed/${encodeURIComponent(mockFeedPayload.slug)}`,
 					{
 						method: "DELETE",
-						headers: {
-							"Content-Type": "application/json",
-							...(key
-								? {
-										[API_KEY_HEADER_NAME]: key,
-									}
-								: {}),
-						},
+						headers: key
+							? {
+									[API_KEY_HEADER_NAME]: key,
+								}
+							: undefined,
 					},
 					{
 						API_KEY: testKey,
