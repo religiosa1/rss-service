@@ -1,4 +1,4 @@
-import { db } from "./db.ts";
+import { db } from "./index.ts";
 
 /** Run migrations on a local database */
 export async function migrate() {

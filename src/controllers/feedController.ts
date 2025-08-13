@@ -30,7 +30,7 @@ feedController.get(
 	}),
 	async (c) => {
 		const data = await feedRepository.listFeeds();
-		c.json(data);
+		return c.json(data);
 	}
 );
 
@@ -51,11 +51,11 @@ feedController.post(
 			400: {
 				description: "Bad request",
 			},
-			403: {
-				description: "Forbidden",
+			401: {
+				description: "Unauthorized",
 			},
 			409: {
-				description: "Feed already exists",
+				description: "Feed with this slug already exists",
 			},
 		},
 	}),
@@ -64,7 +64,7 @@ feedController.post(
 	async (c) => {
 		const payload = c.req.valid("json");
 		const item = await feedRepository.createFeed(payload);
-		c.json(item, 201);
+		return c.json(item, 201);
 	}
 );
 
@@ -98,7 +98,7 @@ feedController.get(
 	async (c) => {
 		const { feedSlug } = c.req.valid("param");
 		const data = await feedService.getFeed(feedSlug);
-		c.text(data, 200, {
+		return c.text(data, 200, {
 			"Content-Type": " application/rss+xml; charset=UTF-8",
 		});
 	}
@@ -121,6 +121,9 @@ feedController.patch(
 			400: {
 				description: "Bad request",
 			},
+			401: {
+				description: "Unauthorized",
+			},
 			404: {
 				description: "Feed with the provided slug doesn't exist",
 			},
@@ -140,8 +143,8 @@ feedController.patch(
 	async (c) => {
 		const { feedSlug } = c.req.valid("param");
 		const payload = c.req.valid("json");
-		const item = feedRepository.updateFeed(feedSlug, payload);
-		c.json(item);
+		const item = await feedRepository.updateFeed(feedSlug, payload);
+		return c.json(item);
 	}
 );
 
@@ -155,6 +158,9 @@ feedController.delete(
 		responses: {
 			204: {
 				description: "Successful response",
+			},
+			401: {
+				description: "Unauthorized",
 			},
 			404: {
 				description: "Feed with the provided slug doesn't exist",
@@ -171,5 +177,6 @@ feedController.delete(
 	async (c) => {
 		const { feedSlug } = c.req.valid("param");
 		await feedRepository.deleteFeed(feedSlug);
+		return c.body(null, 204);
 	}
 );

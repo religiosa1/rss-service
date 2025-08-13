@@ -1,4 +1,5 @@
 import { LibsqlError } from "@libsql/client";
+import { DrizzleQueryError } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
@@ -22,9 +23,9 @@ export function raise(
 
 /** Maps some known DB errors to the correct HTTP statuses */
 export function mapDbError(error: unknown): never {
-	if (error instanceof LibsqlError) {
+	if (error instanceof DrizzleQueryError && error.cause instanceof LibsqlError) {
 		// Check for unique constraint violation
-		if (error.code === "SQLITE_CONSTRAINT_UNIQUE" || error.message.includes("UNIQUE constraint failed")) {
+		if (error.cause.code === "SQLITE_CONSTRAINT_UNIQUE") {
 			throw new HTTPException(409, {
 				cause: error,
 			});

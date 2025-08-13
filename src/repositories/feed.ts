@@ -9,9 +9,9 @@ export async function listFeeds(): Promise<FeedModel[]> {
 	return data.map(dbItemToFeedModel);
 }
 
-export async function readFeed(feedSlug: string): Promise<FeedModel> {
+export async function readFeed(feedSlug: string): Promise<FeedModel | undefined> {
 	const item = await getFeedFromDb().where(eq(schema.feed.slug, feedSlug)).get();
-	return dbItemToFeedModel(item ?? raise(500, "Unable to retrieve modified feed from DB"));
+	return item ? dbItemToFeedModel(item) : undefined;
 }
 
 export async function createFeed(values: FeedUpdateModel): Promise<FeedModel> {
@@ -24,16 +24,29 @@ export async function createFeed(values: FeedUpdateModel): Promise<FeedModel> {
 			modifiedAt: ts,
 		})
 		.catch(mapDbError);
-	return readFeed(values.slug);
+	return (await readFeed(values.slug)) ?? raise(500, "Unable to retrieve modified feed from DB");
 }
 
 export async function updateFeed(feedSlug: string, values: Partial<FeedUpdateModel>): Promise<FeedModel> {
-	await db.update(schema.feed).set(values).where(eq(schema.feed.slug, feedSlug)).catch(mapDbError);
-	return readFeed(feedSlug);
+	const { rowsAffected } = await db
+		.update(schema.feed)
+		.set({
+			...values,
+			modifiedAt: new Date(),
+		})
+		.where(eq(schema.feed.slug, feedSlug))
+		.catch(mapDbError);
+	if (rowsAffected === 0) {
+		raise(404, `Unable to find the required slug: ${feedSlug}`);
+	}
+	return (await readFeed(values.slug ?? feedSlug)) ?? raise(500, "Unable to retrieve modified feed from DB");
 }
 
 export async function deleteFeed(feedSlug: string): Promise<void> {
-	await db.delete(schema.feed).where(eq(schema.feed.slug, feedSlug));
+	const { rowsAffected } = await db.delete(schema.feed).where(eq(schema.feed.slug, feedSlug));
+	if (rowsAffected === 0) {
+		raise(404, `Unable to find the required slug: ${feedSlug}`);
+	}
 }
 
 type FeebDbModel = typeof schema.feed.$inferSelect & { updatedAt: number };
@@ -44,7 +57,7 @@ function getFeedFromDb() {
 			updatedAt: sql<number>`
 				COALESCE(
 					MAX(${schema.feedItem.date}) OVER (PARTITION BY ${schema.feedItem.feedId}),
-					${schema.feed.modifiedAt}
+					${schema.feed.createdAt}
 				)
 			`.as("updatedAt"),
 		})
@@ -55,7 +68,8 @@ function getFeedFromDb() {
 function dbItemToFeedModel(item: FeebDbModel): FeedModel {
 	return {
 		...item,
-		link: new URL(`/${encodeURIComponent(item.slug)}`, publicUrl).toString(),
+		// TODO move it somewhere else
+		link: new URL(`/feed/${encodeURIComponent(item.slug)}`, publicUrl).toString(),
 		updatedAt: new Date(item.updatedAt),
 	};
 }

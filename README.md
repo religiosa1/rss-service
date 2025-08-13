@@ -67,14 +67,14 @@ want to add a reverse proxy if you self-host it.
 The main mode of operation is as a node service, but service should be
 operational in alternative js/ts runtimes with some modifications.
 
-[[./src/app.ts]] provides a default export without a node serve wrapper and
+[[./src/main.ts]] provides a default export without a node serve wrapper and
 should be suitable for running it in other runtimes.
 
 For bun you can run this file directly:
 
 ```sh
 bun run --hot src/index.ts # dev mode
-NODE_ENV=production bun run src/index.ts # prod
+NODE_ENV=production bun run src/main.ts # prod
 ```
 
 For deno you need to modify index.ts replacing
