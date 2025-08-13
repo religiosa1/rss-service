@@ -3,9 +3,10 @@ import { readFeed } from "../repositories/feed.ts";
 import { generatorValue } from "../globalContext.ts";
 import { getFeedItems } from "../repositories/feedItem.ts";
 import { coerceNullish } from "../utils/coerceNullish.ts";
+import { raise } from "../utils/errors.ts";
 
 export async function getFeed(feedSlug: string): Promise<string> {
-	const dbFeed = await readFeed(feedSlug);
+	const dbFeed = (await readFeed(feedSlug)) ?? raise(404, "Unable to retrieve modified feed from DB");
 	const feed = new Feed({
 		title: dbFeed.title,
 		description: dbFeed.description,

@@ -1,4 +1,4 @@
-import { and, eq, desc, inArray } from "drizzle-orm";
+import { and, eq, desc, notInArray } from "drizzle-orm";
 import { MAX_FEED_ITEMS, MAX_FEED_ITEMS_ARCHIVED } from "../constants.ts";
 import { db, schema } from "../db/index.ts";
 import type { FeedItemModel, FeedItemUpdateModel } from "../models/feedItem.ts";
@@ -18,9 +18,10 @@ export async function getArchivedFeedItems(feedSlug: string): Promise<FeedItemMo
 
 export async function createFeedItem(feedSlug: string, values: FeedItemUpdateModel): Promise<FeedItemModel> {
 	const ts = new Date();
+
 	return await db.transaction(async (tx) => {
 		const feedId = await getFeedIdBySlug(feedSlug, tx);
-		await tx
+		const { rowsAffected } = await tx
 			.insert(schema.feedItem)
 			.values({
 				...values,
@@ -29,21 +30,26 @@ export async function createFeedItem(feedSlug: string, values: FeedItemUpdateMod
 				modifiedAt: ts,
 			})
 			.catch(mapDbError);
+		if (rowsAffected === 0) {
+			raise(404, `Unable to find the required slug: ${values.slug} in feed ${feedSlug}`);
+		}
 
 		// Removing older items from archive
 		await tx.delete(schema.feedItem).where(
-			inArray(
-				schema.feedItem.id,
-				tx
-					.select({ id: schema.feedItem.id })
-					.from(schema.feedItem)
-					.where(eq(schema.feedItem.feedId, feedId))
-					.orderBy(desc(schema.feedItem.date), schema.feedItem.id)
-					.offset(MAX_FEED_ITEMS + MAX_FEED_ITEMS_ARCHIVED)
+			and(
+				eq(schema.feedItem.feedId, feedId),
+				notInArray(
+					schema.feedItem.id,
+					tx
+						.select({ id: schema.feedItem.id })
+						.from(schema.feedItem)
+						.where(eq(schema.feedItem.feedId, feedId))
+						.orderBy(desc(schema.feedItem.date), schema.feedItem.id)
+						.limit(MAX_FEED_ITEMS + MAX_FEED_ITEMS_ARCHIVED)
+				)
 			)
 		);
-		const newItem = await readModifiedFeedItem(feedId, values.slug);
-		return dbItemToFeedModel(feedSlug, newItem);
+		return await readModifiedFeedItem(feedId, values.slug, tx);
 	});
 }
 
@@ -53,23 +59,28 @@ export async function updateFeedItem(
 	values: Partial<FeedItemUpdateModel>
 ): Promise<FeedItemModel> {
 	const feedId = await getFeedIdBySlug(feedSlug);
-	await db
+	const { rowsAffected } = await db
 		.update(schema.feedItem)
 		.set(values)
 		.where(and(eq(schema.feedItem.feedId, feedId), eq(schema.feedItem.slug, feedItemSlug)))
 		.catch(mapDbError);
-	const item = await readModifiedFeedItem(feedId, feedItemSlug);
-	return dbItemToFeedModel(feedSlug, item);
+	if (rowsAffected === 0) {
+		raise(404, `Unable to find the required slug: ${feedItemSlug} in feed ${feedSlug}`);
+	}
+	return await readModifiedFeedItem(feedId, values.slug ?? feedItemSlug);
 }
 
 export async function deleteFeedItem(feedSlug: string, feedItemSlug: string): Promise<void> {
 	const feedId = await getFeedIdBySlug(feedSlug);
-	await db.delete(schema.feedItem).where(
+	const { rowsAffected } = await db.delete(schema.feedItem).where(
 		and(
 			eq(schema.feedItem.feedId, feedId), //
 			eq(schema.feedItem.slug, feedItemSlug)
 		)
 	);
+	if (rowsAffected === 0) {
+		raise(404, `Unable to find the required slug: ${feedItemSlug} in feed ${feedSlug}`);
+	}
 }
 
 /** @see https://github.com/drizzle-team/drizzle-orm/discussions/3271 */
@@ -96,13 +107,6 @@ async function readModifiedFeedItem(feedId: number, slug: string, tx: MaybeTrans
 			.where(and(eq(schema.feedItem.feedId, feedId), eq(schema.feedItem.slug, slug)))
 			.get()) ?? raise(500, "Unable to retrieve modified feed item from DB");
 	return item;
-}
-
-function dbItemToFeedModel(feedSlug: string, item: FeedItemDbModel): FeedItemModel {
-	return {
-		...item,
-		link: new URL(`/feed/${encodeURIComponent(feedSlug)}/items/${encodeURIComponent(item.slug)}`).toString(),
-	};
 }
 
 function getFeedItemsDbQuery(feedId: number) {

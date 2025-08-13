@@ -4,7 +4,7 @@ declare global {
 			/** Name of libsql database file (or a turso url)*/
 			DB_FILE_NAME?: string;
 			/** authToken for Turso/libsql http */
-			DB_AUTH_TOKEN?: stirng;
+			DB_AUTH_TOKEN?: string;
 			/** Do not apply DB migrations on app startup */
 			DB_SKIP_MIGRATIONS?: boolean;
 			/** TCP Port on which service will run */

@@ -1,4 +1,7 @@
 import { mock } from "node:test";
+import { tmpdir } from "node:os";
+import path from "node:path";
+
 import { fixedDateStr } from "./setup.ts";
 
 /** Transform Date objects in paylod to string -- to align with JSON response */
@@ -9,6 +12,10 @@ export type Jsonify<T extends object> = {
 /** Helper utility for advancing mocked date-time, to verify modifiedAt modifications in moddels */
 export class DateMocker {
 	private lastTime = new Date(fixedDateStr);
+
+	getCurrentTime() {
+		return this.lastTime;
+	}
 
 	advanceTime(stepMs: number): Date {
 		if (!Number.isInteger(stepMs) || stepMs <= 0) {
@@ -22,4 +29,9 @@ export class DateMocker {
 	[Symbol.dispose]() {
 		mock.timers.setTime(new Date(fixedDateStr).getTime());
 	}
+}
+
+export function mkTmpDbFile(): string {
+	const randomId = Math.random().toString(36).substring(2, 15);
+	return path.join(tmpdir(), `test-${randomId}.db`);
 }

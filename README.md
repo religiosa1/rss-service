@@ -1,11 +1,14 @@
 # RSS feed microservice
 
-Nodejs microservice for providing RSS feeds to somme other websites or services, that
-don't have it.
+Nodejs microservice for providing RSS feeds to somme other websites or services,
+that don't have it.
 
 It exposes API endpoint to manage your feeds and feed entry items, storing them
 in a libsql database, automatically archiving old entries and removing old
 archived ones (keeps 100 non-archived and 200 archived entries per feed).
+
+Uses [feed](https://github.com/jpmonette/feed) library for the actual
+rss generation.
 
 The initial reason behind it -- to provide feeds for some websites, scraping
 them with n8n flow and posting the result to this service, so I can access the
@@ -93,8 +96,10 @@ For launching in service in a cloud, there's a question of database, as it's
 stored in the filesystem by default. As it's a Turso libsql database, you can
 potentially use http connection instead, supplying the authToken.
 
-Please refer to [Drizzle documentation](https://orm.drizzle.team/docs/get-started/d1-new)
-and [Hono documentation](https://hono.dev/docs/getting-started/cloudflare-workers).
+Please refer to
+[Drizzle documentation](https://orm.drizzle.team/docs/get-started/d1-new)
+and
+[Hono documentation](https://hono.dev/docs/getting-started/cloudflare-workers).
 
 ## Configuration
 

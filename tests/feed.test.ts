@@ -1,45 +1,37 @@
 import { before, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { DateMocker, type Jsonify } from "./helpers.ts";
-import { fixedDateStr, mockTimers } from "./setup.ts";
+import { DateMocker, mkTmpDbFile, type Jsonify } from "./helpers.ts";
+import { mockTimers } from "./setup.ts";
 import type { FeedModel, FeedUpdateModel } from "../src/models/feed.ts";
 import { resetDbConnection } from "../src/db/db.ts";
 import { migrate } from "../src/db/migrate.ts";
 import { app } from "../src/app.ts";
 import { API_KEY_HEADER_NAME } from "../src/constants.ts";
 import * as feedRepository from "../src/repositories/feed.ts";
+import * as feedItemRepository from "../src/repositories/feedItem.ts";
+import { makeMockFeedItem, mockFeedPayload, mockFeedResult } from "./mocks.ts";
+import { unlinkSync } from "node:fs";
 
 before(() => {
 	mockTimers();
 });
 
-beforeEach(async () => {
+beforeEach(async (t) => {
 	// ensurrring each test works with a clean in memory version of db.
-	resetDbConnection(":memory:");
+	// Initial idea was to run this in :memory:, but there's a bug with libsql
+	// https://github.com/tursodatabase/libsql-client-ts/issues/140
+	// So we're opting for temporary files instead.
+	const tmpDbFile = mkTmpDbFile();
+	resetDbConnection(tmpDbFile);
 	await migrate();
+
+	if ("after" in t) {
+		t.after(() => {
+			unlinkSync(tmpDbFile)
+		});
+	}
 });
 
-const mockFeedPayload: FeedUpdateModel = {
-	slug: "test",
-	title: "test title",
-	description: "qwerty",
-};
-
-const mockFeedResult: Jsonify<FeedModel> = {
-	author: null,
-	copyright: null,
-	createdAt: fixedDateStr,
-	description: "qwerty",
-	favicon: null,
-	id: 1,
-	image: null,
-	language: null,
-	link: "http://localhost:3000/feed/test",
-	modifiedAt: fixedDateStr,
-	slug: "test",
-	title: "test title",
-	updatedAt: fixedDateStr,
-};
 
 describe("feed", () => {
 	describe("GET /feed", () => {
@@ -60,6 +52,36 @@ describe("feed", () => {
 			const res = await app.request("/feed");
 			assert.deepEqual(await res.json(), []);
 			assert.equal(res.status, 200);
+		});
+
+		it("updated field on the feed depends on the newest fieldItem date", async () => {
+			using dateMocker = new DateMocker();
+			await feedRepository.createFeed(mockFeedPayload);
+			const initialPayload = await getFeed();
+			assert.equal(initialPayload.updatedAt, dateMocker.getCurrentTime().toISOString());
+
+			const secondDate = dateMocker.advanceTime(3000);
+			await feedItemRepository.createFeedItem(mockFeedPayload.slug, makeMockFeedItem("test1", secondDate));
+			const secondPayload = await getFeed();
+			// we're using date from the feedItem now
+			assert.equal(secondPayload.updatedAt, secondDate.toISOString());
+
+			dateMocker.advanceTime(3000);
+			// new item will be published "before", it's creation, so it createdAt will be newer, but actual date is older
+			await feedItemRepository.createFeedItem(mockFeedPayload.slug, makeMockFeedItem("test2", new Date(secondDate.getTime() - 1000)));
+			const thridPayload = await getFeed();
+			// we're stil be using second date value, as it's date is newer
+			assert.equal(thridPayload.updatedAt, secondDate.toISOString());
+
+
+			async function getFeed() {
+				const res = await app.request("/feed");
+				const payload: Jsonify<FeedModel>[] = await res.json();
+				if (payload[0] == null) {
+					throw new Error();
+				}
+				return payload[0];
+			}
 		});
 	}); // GET /feed
 

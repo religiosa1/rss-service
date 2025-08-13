@@ -6,7 +6,7 @@ import { ensureUrl } from "../utils/ensureUrl.ts";
 export let db = makeInstance(ensureUrl(process.env.DB_FILE_NAME ?? DEFAULT_DB_NAME));
 
 /** Reseting db connection -- for testing purposes */
-export function resetDbConnection(connectionString = ensureUrl(process.env.DB_FILE_NAME ?? DEFAULT_DB_NAME)) {
+export function resetDbConnection(connectionString = process.env.DB_FILE_NAME ?? DEFAULT_DB_NAME) {
 	db.$client.close();
 	db = makeInstance(connectionString);
 }
@@ -14,7 +14,7 @@ export function resetDbConnection(connectionString = ensureUrl(process.env.DB_FI
 function makeInstance(connectionString: string) {
 	return drizzle({
 		connection: {
-			url: connectionString,
+			url: ensureUrl(connectionString),
 			// for HTTP version of Turso, not required otherwise
 			authToken: process.env.DB_AUTH_TOKEN,
 		},

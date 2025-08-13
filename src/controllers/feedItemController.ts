@@ -96,7 +96,7 @@ feedItemController.get(
 		const { feedSlug } = c.req.valid("param");
 		const nonArchived = await feedItemRepository.getFeedItems(feedSlug);
 		const archived = await feedItemRepository.getArchivedFeedItems(feedSlug);
-		c.json([
+		return c.json([
 			...nonArchived.map((i) => ({ ...i, archived: false })),
 			...archived.map((i) => ({ ...i, archived: true })),
 		]);
@@ -147,7 +147,7 @@ feedItemController.post(
 		const { feedSlug } = c.req.valid("param");
 		const payload = c.req.valid("json");
 		const item = await feedItemRepository.createFeedItem(feedSlug, payload);
-		c.json(item, 201);
+		return c.json(item, 201);
 	}
 );
 
@@ -196,7 +196,7 @@ feedItemController.patch(
 		const { feedSlug, feedItemSlug } = c.req.valid("param");
 		const payload = c.req.valid("json");
 		const item = await feedItemRepository.updateFeedItem(feedSlug, feedItemSlug, payload);
-		c.json(item);
+		return c.json(item);
 	}
 );
 
@@ -236,5 +236,6 @@ feedItemController.delete(
 	async (c) => {
 		const { feedSlug, feedItemSlug } = c.req.valid("param");
 		await feedItemRepository.deleteFeedItem(feedSlug, feedItemSlug);
+		return c.body(null, 204);
 	}
 );
