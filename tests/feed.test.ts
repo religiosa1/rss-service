@@ -240,6 +240,17 @@ describe("feed", () => {
 			assert.equal(resp.status, 200);
 		});
 
+		it("returns 400 on invalid feedSlug param", async () => {
+			const res = await app.request(`/feed/!!!`, {
+				method: "PATCH",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ slug: 123 }),
+			});
+			assert.equal(res.status, 400);
+		});
+
 		it("returns 400 on invalid fields", async () => {
 			const res = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}`, {
 				method: "PATCH",
@@ -251,7 +262,7 @@ describe("feed", () => {
 			assert.equal(res.status, 400);
 		});
 
-		it("returns 409 on attempts to update slug to already existing value", async () => {
+		it("returns 409 on attempts to update a slug to already existing value", async () => {
 			const newSlug = "test2"
 			await feedRepository.createFeed(mockFeedPayload);
 			await feedRepository.createFeed({...mockFeedPayload, slug: newSlug });

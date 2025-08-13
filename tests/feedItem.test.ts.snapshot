@@ -32,3 +32,39 @@ exports[`feed items > GET /feed/:feedSlug/items/ > retrieves a list of current i
   }
 ]
 `;
+
+exports[`feed items > PATCH /feed/:feedSlug/items/:feedItemSlug > allows to change feed item slug 1`] = `
+{
+  "id": 1,
+  "feedId": 1,
+  "slug": "test2",
+  "title": "feed item title",
+  "description": "feed item description",
+  "content": "blah",
+  "date": "2025-01-01T10:30:00.000Z",
+  "image": null,
+  "link": "http://example.com/test1",
+  "authors": null,
+  "contributors": null,
+  "createdAt": "2025-01-01T10:30:00.000Z",
+  "modifiedAt": "2025-01-01T10:30:00.000Z"
+}
+`;
+
+exports[`feed items > PATCH /feed/:feedSlug/items/:feedItemSlug > updates an existing feed item 1`] = `
+{
+  "id": 1,
+  "feedId": 1,
+  "slug": "test1",
+  "title": "another title",
+  "description": "feed item description",
+  "content": "bizbar",
+  "date": "2025-01-01T10:30:00.000Z",
+  "image": null,
+  "link": "http://example.com/test1",
+  "authors": null,
+  "contributors": null,
+  "createdAt": "2025-01-01T10:30:00.000Z",
+  "modifiedAt": "2025-01-01T10:30:00.000Z"
+}
+`;

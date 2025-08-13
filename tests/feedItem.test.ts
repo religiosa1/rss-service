@@ -255,7 +255,138 @@ describe("feed items", () => {
 	}); // POST /feed/:feedSlug/items/
 
 	describe("PATCH /feed/:feedSlug/items/:feedItemSlug", () => {
-		// TODO
+		it("updates an existing feed item", async (t) => {
+			await feedRepository.createFeed(mockFeedPayload);
+			await feedItemRepository.createFeedItem(mockFeedPayload.slug, makeMockFeedItem("test1"));
+			const resp = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}/items/test1`, {
+				method: "PATCH",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ title: "another title", content: "bizbar" }),
+			});
+			assert.equal(resp.status, 200);
+			const respPayload = await resp.json();
+			t.assert.snapshot(respPayload);
+		});
+
+		it("allows to change feed item slug", async (t) => {
+			await feedRepository.createFeed(mockFeedPayload);
+			await feedItemRepository.createFeedItem(mockFeedPayload.slug, makeMockFeedItem("test1"));
+			const resp = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}/items/test1`, {
+				method: "PATCH",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ slug: "test2" }),
+			});
+			assert.equal(resp.status, 200);
+			const respPayload = await resp.json();
+			t.assert.snapshot(respPayload);
+		});
+
+		it("returns 409 on attemps to change a feed item slug to an already existing in the feed slug", async () => {
+			await feedRepository.createFeed(mockFeedPayload);
+			await feedItemRepository.createFeedItem(mockFeedPayload.slug, makeMockFeedItem("test1"));
+			await feedItemRepository.createFeedItem(mockFeedPayload.slug, makeMockFeedItem("test2"));
+			const resp = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}/items/test1`, {
+				method: "PATCH",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ slug: "test2" }),
+			});
+			assert.equal(resp.status, 409);
+		});
+
+		it("returns 400 on invalid feedSlug param", async () => {
+			const resp = await app.request(`/feed/!!!/items/test1`, {
+				method: "PATCH",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(makeMockFeedItem("test1")),
+			});
+			assert.equal(resp.status, 400);
+		});
+
+		it("returns 400 on invalid feedItemSlug param", async () => {
+			const resp = await app.request(`/feed/test/items/!!!`, {
+				method: "PATCH",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(makeMockFeedItem("test1")),
+			});
+			assert.equal(resp.status, 400);
+		});
+
+		it("returns 400 on invalid fields in body", async () => {
+			await feedRepository.createFeed(mockFeedPayload);
+			await feedItemRepository.createFeedItem(mockFeedPayload.slug, makeMockFeedItem("test1"));
+			const resp = await app.request(`/feed/${mockFeedPayload.slug}/items/test1`, {
+				method: "PATCH",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ description: 123 }),
+			});
+			assert.equal(resp.status, 400);
+		});
+
+		it("returns 404 on non-existing feedSlug param", async () => {
+			const resp = await app.request(`/feed/bad-slug/items/blah`, {
+				method: "PATCH",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(makeMockFeedItem("test1")),
+			});
+			assert.equal(resp.status, 404);
+		});
+
+		it("returns 404 on non-existing feedItemSlug param", async () => {
+			await feedRepository.createFeed(mockFeedPayload);
+			const resp = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}/items/bad-slug`, {
+				method: "PATCH",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(makeMockFeedItem("test1")),
+			});
+			assert.equal(resp.status, 404);
+		});
+
+		it("returns 401 on authorized requests", async () => {
+			await feedRepository.createFeed(mockFeedPayload);
+			await feedItemRepository.createFeedItem(mockFeedPayload.slug, makeMockFeedItem("test1"));
+			const testKey = "test-key";
+			const initialResp = await makeRequest(undefined);
+			assert.equal(initialResp.status, 401);
+			const authorizedResp = await makeRequest(testKey);
+			assert.equal(authorizedResp.status, 200);
+
+			function makeRequest(key: string | undefined) {
+				return app.request(
+					`/feed/${encodeURIComponent(mockFeedPayload.slug)}/items/test1`,
+					{
+						method: "PATCH",
+						headers: {
+							"Content-Type": "application/json",
+								...(key
+									? {
+											[API_KEY_HEADER_NAME]: key,
+										}
+									: {}),
+						},
+						body: JSON.stringify({ description: "awwesqwer" }),
+					},
+					{
+						API_KEY: testKey,
+					} satisfies NodeJS.ProcessEnv
+				);
+			}
+		}); 
 	}); // PATCH /feed/:feedSlug/items/:feedItemSlug
 
 	describe("DELETE /feed/:feedSlug/items/:feedItemSlug", () => {
@@ -313,15 +444,15 @@ describe("feed items", () => {
 			assert.equal(authorizedResp.status, 204);
 
 			function makeRequest(key: string | undefined) {
-			return app.request(
-				`/feed/${encodeURIComponent(mockFeedPayload.slug)}/items/test1`,
-				{
-					method: "DELETE",
-					headers: key
-						? {
-								[API_KEY_HEADER_NAME]: key,
-								}
-							: undefined,
+				return app.request(
+					`/feed/${encodeURIComponent(mockFeedPayload.slug)}/items/test1`,
+					{
+						method: "DELETE",
+						headers: key
+							? {
+									[API_KEY_HEADER_NAME]: key,
+									}
+								: undefined,
 					},
 					{
 						API_KEY: testKey,

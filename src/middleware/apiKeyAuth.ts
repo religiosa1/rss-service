@@ -1,10 +1,11 @@
+import { env } from "hono/adapter";
 import { createMiddleware } from "hono/factory";
 import { API_KEY_HEADER_NAME } from "../constants.ts";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { HTTPException } from "hono/http-exception";
 
 export const apiKeyAuth = createMiddleware(async (c, next) => {
-	const apiKey = c.env?.API_KEY;
+	const apiKey = env<NodeJS.ProcessEnv>(c, process.env.NODE_ENV === "test" ? "workerd" : undefined)?.API_KEY;
 
 	if (apiKey) {
 		const val = c.req.header(API_KEY_HEADER_NAME);
