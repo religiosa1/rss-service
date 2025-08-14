@@ -25,6 +25,7 @@
 		"@hono/zod-validator": "^0.4.3",
 		"@libsql/client": "^0.15.10",
 		"@scalar/hono-api-reference": "^0.9.13",
+		"drizzle-kit": "^0.31.4",
 		"drizzle-orm": "^0.44.4",
 		"feed": "^5.1.0",
 		"hono": "^4.9.0",
@@ -35,7 +36,6 @@
 	},
 	"devDependencies": {
 		"@types/node": "^24.2.1",
-		"drizzle-kit": "^0.31.4",
 		"typescript": "^5.9.2"
 	}
 }

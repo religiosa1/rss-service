@@ -19,7 +19,12 @@ declare global {
 			PUBLIC_URL?: string;
 			/** Value used in generator field of RSS feeds. */
 			RSS_GENERATOR?: string;
-			/** Your usual: production, development, test */
+			/** Your usual: production, development, test
+			 *
+			 * "test" value modifies the behaviour of the service for compatibility
+			 * with node test runner and should only be used during the test runner
+			 * launches.
+			 */
 			NODE_ENV?: string;
 		}
 	}

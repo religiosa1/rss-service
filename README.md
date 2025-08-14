@@ -47,7 +47,25 @@ All modification endpoints require a API-KEY auhthentication through
 
 ### Running with docker
 
-TODO
+The easiest way to launch the service is to run the provided docker image:
+
+```sh
+docker volume create rss_service_data
+
+docker run -it --rm \
+  --name rss-service \
+  -p 3000:3000 \
+  -e API_KEY=YOUR_API_KEY_HERE \
+  -e PUBLIC_URL=http://example.com/ \
+  -v rss_service_data:/app/data \
+  ghcr.io/religiosa1/rss-service
+```
+
+You can build your own image using the provided Dockerfile:
+
+```sh
+docker build -t rss-service .
+```
 
 ### For local development and direct node deployment:
 
