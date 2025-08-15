@@ -164,6 +164,10 @@ feedItemController.patch(
 			\`null\` in the payload, to reset them, not specifying the field in the 
 			payload at all, or specifying an undefined value will result in 
 			the existing value kept.
+
+			Please notice, that updates for authors and contributors must come as a
+			full array, with all old values present. This will be used as is.
+			Settings either value as null will also remove the corresponding field.
 		`,
 		operationId: "updateFeedItem",
 		tags,

@@ -15,6 +15,8 @@ declare global {
 			DISABLE_OPEN_API?: boolean;
 			/** Disable Scalar documentation (OpenApi schema will still be on) */
 			DISABLE_SCALAR?: boolean;
+			/** Disable prometheus metrics */
+			DISABLE_PROMETHEUS?: boolean;
 			/** API key used to authorize the create/update/delete endpoints */
 			API_KEY?: string;
 			/** Public url of the service, for values in feeds */

@@ -42,6 +42,7 @@ All modification endpoints require a API-KEY authentication through
 - GET /scalar - Scalar web-ui documentation
 - GET /openapi - OpenAPI schema
 - GET / - healthcheck, just returns empty 200 response
+- GET /metrics - Prometheus metrics (RED) (provided by [@hono/prometheus](https://www.npmjs.com/package/@hono/prometheus))
 
 ## Installation and launch.
 
