@@ -1,8 +1,8 @@
 import { getTableColumns, eq, sql } from "drizzle-orm";
 import { db, schema } from "../db/index.ts";
 import type { FeedModel, FeedUpdateModel } from "../models/feed.ts";
-import { publicUrl } from "../globalContext.ts";
 import { mapDbError, raise } from "../utils/errors.ts";
+import { generateFeedLink } from "../utils/generateFeedLink.ts";
 
 export async function listFeeds(): Promise<FeedModel[]> {
 	const data = await getFeedFromDb();
@@ -68,8 +68,7 @@ function getFeedFromDb() {
 function dbItemToFeedModel(item: FeebDbModel): FeedModel {
 	return {
 		...item,
-		// TODO move it somewhere else
-		link: new URL(`/feed/${encodeURIComponent(item.slug)}`, publicUrl).toString(),
+		link: generateFeedLink(item.slug),
 		updatedAt: new Date(item.updatedAt),
 	};
 }

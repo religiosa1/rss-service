@@ -33,3 +33,13 @@ export function mapDbError(error: unknown): never {
 	}
 	throw error;
 }
+
+export type ResultTuple<T> = [T, undefined] | [undefined, NonNullable<unknown>];
+export function attempt<T>(action: () => T): ResultTuple<T> {
+	try {
+		const result = action();
+		return [result, undefined];
+	} catch (e) {
+		return [undefined, e ?? new Error("Nullish error", { cause: e })];
+	}
+}

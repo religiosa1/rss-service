@@ -18,8 +18,8 @@ Requires node v22.11 or higher, as it uses direct typescript execution.
 
 ## API Endpoints
 
-All modification endpoints require a API-KEY auhthentication through
-`X-API-HEADER` suppplied in the env variables.
+All modification endpoints require a API-KEY authentication through
+`X-API-HEADER` supplied in the env variables.
 
 #### Feed Management (/feed):
 

@@ -71,9 +71,9 @@ describe("feed", () => {
 			dateMocker.advanceTime(3000);
 			// new item will be published "before", it's creation, so it createdAt will be newer, but actual date is older
 			await feedItemRepository.createFeedItem(mockFeedPayload.slug, makeMockFeedItem("test2", new Date(secondDate.getTime() - 1000)));
-			const thridPayload = await getFeed();
-			// we're stil be using second date value, as it's date is newer
-			assert.equal(thridPayload.updatedAt, secondDate.toISOString());
+			const thirdPayload = await getFeed();
+			// we're still be using second date value, as it's date is newer
+			assert.equal(thirdPayload.updatedAt, secondDate.toISOString());
 
 
 			async function getFeed() {

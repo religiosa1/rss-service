@@ -285,7 +285,7 @@ describe("feed items", () => {
 			t.assert.snapshot(respPayload);
 		});
 
-		it("returns 409 on attemps to change a feed item slug to an already existing in the feed slug", async () => {
+		it("returns 409 on attempts to change a feed item slug to an already existing in the feed slug", async () => {
 			await feedRepository.createFeed(mockFeedPayload);
 			await feedItemRepository.createFeedItem(mockFeedPayload.slug, makeMockFeedItem("test1"));
 			await feedItemRepository.createFeedItem(mockFeedPayload.slug, makeMockFeedItem("test2"));
