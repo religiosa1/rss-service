@@ -24,4 +24,5 @@ export default {
 		return app.fetch(new Request(url, req));
 	},
 	port: port,
+	hostname: "localhost",
 } satisfies Parameters<typeof serve>[0];

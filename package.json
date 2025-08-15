@@ -14,11 +14,12 @@
 	"type": "module",
 	"main": "index.ts",
 	"scripts": {
-		"start": "NODE_ENV=production node ./index.ts",
-		"dev": "node --watch ./index.ts",
+		"start": "NODE_ENV=production node --env-file-if-exists .env ./index.ts",
+		"dev": "node --env-file-if-exists .env --watch ./index.ts",
 		"test": "NODE_ENV=test node --test-global-setup ./tests/setup.ts --test **/*.test.{js,ts}",
 		"test:update-snapshots": "NODE_ENV=test node --test-global-setup ./tests/setup.ts --test-update-snapshots  --test **/*.test.{js,ts}",
-		"make-migration": "drizzle-kit generate"
+		"make-migration": "drizzle-kit generate",
+		"generate-openapi-specs": "node ./scripts/generateOpenApiSpecs.ts"
 	},
 	"dependencies": {
 		"@hono/node-server": "^1.18.1",

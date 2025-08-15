@@ -2,6 +2,8 @@ import { Hono } from "hono";
 import z from "zod";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/zod";
+import { dedent } from "ts-dedent";
+
 import { feedUpdateSchema, feedSchema } from "../models/feed.ts";
 import { slugSchema } from "../models/slug.ts";
 import { apiKeyAuthSecurity } from "../models/apiKeyAuthSecurity.ts";
@@ -109,6 +111,16 @@ feedController.patch(
 	describeRoute({
 		summary: "Update existing feed values",
 		operationId: "updateFeed",
+		description: dedent`
+			Updates the existing feed model (by slug provided in path) with the values
+			provided in the payload. Please notice, that if you provide author value,
+			if it contains null/undefined in place of some of its fields, it means 
+			"remove the provided field", i.e. field patch is not deep, and if author
+			is present in the payload it must contain of the old fields in it.
+
+			If you pass author as null it will be removed, if you don't pass author
+			field at all, the existing value will not be changed.
+		`,
 		tags,
 		security: apiKeyAuthSecurity,
 		responses: {

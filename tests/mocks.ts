@@ -1,7 +1,15 @@
+import type { AuthorModel } from "../src/models/author.ts";
 import type { FeedModel, FeedUpdateModel } from "../src/models/feed.ts";
 import type { FeedItemUpdateModel } from "../src/models/feedItem.ts";
 import type { Jsonify } from "./helpers.ts";
 import { fixedDateStr } from "./setup.ts";
+
+export const mockAuthor: AuthorModel = {
+	name: "John Doe",
+	email: "john.doe@example.com",
+	link: "https://example.com",
+	avatar: "https://example.com/favicon.png",
+};
 
 export const mockFeedPayload: FeedUpdateModel = {
 	slug: "test",
@@ -18,7 +26,7 @@ export const mockFeedResult: Jsonify<FeedModel> = {
 	id: 1,
 	image: null,
 	language: null,
-	link: "http://localhost:3000/feed/test",
+	link: "/feed/test",
 	modifiedAt: fixedDateStr,
 	slug: "test",
 	title: "test title",

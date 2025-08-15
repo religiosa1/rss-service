@@ -9,6 +9,8 @@ declare global {
 			DB_SKIP_MIGRATIONS?: boolean;
 			/** TCP Port on which service will run */
 			PORT?: string;
+			/** Host/ip address where to listen to. Defaults to "localhost" */
+			HOST?: string;
 			/** Disable both OpenApi and Scalar documentation */
 			DISABLE_OPEN_API?: boolean;
 			/** Disable Scalar documentation (OpenApi schema will still be on) */
@@ -21,7 +23,7 @@ declare global {
 			RSS_GENERATOR?: string;
 			/** Your usual: production, development, test
 			 *
-			 * "test" value modifies the behaviour of the service for compatibility
+			 * "test" value modifies the behavior of the service for compatibility
 			 * with node test runner and should only be used during the test runner
 			 * launches.
 			 */

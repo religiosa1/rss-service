@@ -4,7 +4,7 @@ import { unlinkSync } from "node:fs";
 
 import { DateMocker, mkTmpDbFile, type Jsonify } from "./helpers.ts";
 import { mockTimers } from "./setup.ts";
-import { makeMockFeedItem, mockFeedPayload, mockFeedResult } from "./mocks.ts";
+import { makeMockFeedItem, mockAuthor, mockFeedPayload, mockFeedResult } from "./mocks.ts";
 
 import type { FeedModel, FeedUpdateModel } from "../src/models/feed.ts";
 import { resetDbConnection } from "../src/db/db.ts";
@@ -45,7 +45,7 @@ describe("feed", () => {
 			const responsePayload = await res.json();
 			assert.deepEqual(responsePayload, [
 				mockFeedResult,
-				{ ...mockFeedResult, id: 2, slug: "test2", link: "http://localhost:3000/feed/test2" },
+				{ ...mockFeedResult, id: 2, slug: "test2", link: "/feed/test2" },
 			]);
 			assert.equal(res.status, 200);
 		});
@@ -85,6 +85,13 @@ describe("feed", () => {
 				return payload[0];
 			}
 		});
+
+		it("returns the provided author object", async () => {
+			await feedRepository.createFeed({...mockFeedPayload, author: mockAuthor });
+			const res = await app.request("/feed");
+			const responsePayload = await res.json();
+			assert.deepEqual(responsePayload[0].author, mockAuthor);
+		});
 	}); // GET /feed
 
 	describe("GET /feed/:feedSlug", () => {
@@ -121,6 +128,22 @@ describe("feed", () => {
 			});
 			const responsePayload = await res.json();
 			assert.deepEqual(responsePayload, mockFeedResult);
+			assert.equal(res.status, 201);
+		});
+
+		it("allows to create author object", async () => {
+			const res = await app.request("/feed", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					...mockFeedPayload,
+					author: mockAuthor
+				} satisfies FeedUpdateModel),
+			});
+			const responsePayload = await res.json();
+			assert.deepEqual(responsePayload, { ...mockFeedResult, author: mockAuthor });
 			assert.equal(res.status, 201);
 		});
 
@@ -198,7 +221,7 @@ describe("feed", () => {
 	describe("PATCH /feed/:feedSlug", () => {
 		it("updates existing feed", async () => {
 			using dateMocker = new DateMocker();
-			await feedRepository.createFeed(mockFeedPayload);
+			await feedRepository.createFeed({ ...mockFeedPayload, author: mockAuthor });
 			const newDescription = "other desc";
 			const newDate = dateMocker.advanceTime(1000);
 			const resp = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}`, {
@@ -211,6 +234,7 @@ describe("feed", () => {
 			const responsePayload = await resp.json();
 			assert.deepEqual(responsePayload, {
 				...mockFeedResult,
+				author: mockAuthor, // should be still in place, as we didn't pass it in payload
 				description: newDescription,
 				modifiedAt: newDate.toISOString(),
 			} satisfies Jsonify<FeedModel>);
@@ -234,9 +258,51 @@ describe("feed", () => {
 			assert.deepEqual(responsePayload, {
 				...mockFeedResult,
 				slug: newSlug,
-				link: "http://localhost:3000/feed/new_slug",
+				link: "/feed/new_slug",
 				modifiedAt: newDate.toISOString(),
 			} satisfies Jsonify<FeedModel>);
+			assert.equal(resp.status, 200);
+		});
+
+		it("allows to add an author", async () => {
+			await feedRepository.createFeed(mockFeedPayload);
+			const resp = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}`, {
+				method: "PATCH",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ author: mockAuthor } satisfies Partial<FeedUpdateModel>),
+			});
+			const responsePayload = await resp.json();
+			assert.deepEqual(responsePayload.author, mockAuthor);
+			assert.equal(resp.status, 200);
+		});
+
+		it("allows to delete an existing author", async () => {
+			await feedRepository.createFeed({...mockFeedPayload, author: mockAuthor });
+			const resp = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}`, {
+				method: "PATCH",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ author: null } satisfies Partial<FeedUpdateModel>),
+			});
+			const responsePayload = await resp.json();
+			assert.equal(responsePayload.author, null);
+			assert.equal(resp.status, 200);
+		});
+
+		it("allows to modify an existing author", async () => {
+			await feedRepository.createFeed({...mockFeedPayload, author: mockAuthor });
+			const resp = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}`, {
+				method: "PATCH",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ author: { name: "Jane Doe"} } satisfies Partial<FeedUpdateModel>),
+			});
+			const responsePayload = await resp.json();
+			assert.deepEqual(responsePayload.author, { name: "Jane Doe" });
 			assert.equal(resp.status, 200);
 		});
 
