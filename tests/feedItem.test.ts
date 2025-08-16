@@ -2,8 +2,7 @@ import { before, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { unlinkSync } from "node:fs";
 
-import { DateMocker, mkTmpDbFile } from "./helpers.ts";
-import { mockTimers } from "./setup.ts";
+import { DateMocker, mkTmpDbFile, mockTimers } from "./helpers.ts";
 import { makeMockFeedItem, mockFeedPayload } from "./mocks.ts";
 
 import { db, resetDbConnection } from "../src/db/db.ts";

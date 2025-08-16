@@ -1,5 +1,13 @@
 {
 	// Visit https://aka.ms/tsconfig to read more about this file
+	"include": [
+		"**/*.ts",
+		"**/*.tsx"
+	],
+	"exclude": [
+		"node_modules",
+		"dist"
+	],
 	"compilerOptions": {
 		// File Layout
 		// "rootDir": "./src",

@@ -2,7 +2,7 @@ import { mock } from "node:test";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { fixedDateStr } from "./setup.ts";
+import { fixedDateStr } from "./mocks.ts";
 
 /** Transform Date objects in payload to string -- to align with JSON response */
 export type Jsonify<T extends object> = {
@@ -34,4 +34,13 @@ export class DateMocker {
 export function mkTmpDbFile(): string {
 	const randomId = Math.random().toString(36).substring(2, 15);
 	return path.join(tmpdir(), `test-${randomId}.db`);
+}
+
+export function mockTimers() {
+	const fixedDate = new Date(fixedDateStr);
+
+	mock.timers.enable({
+		apis: ["Date"],
+	});
+	mock.timers.setTime(fixedDate.getTime());
 }

@@ -2,8 +2,7 @@ import { before, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { unlinkSync } from "node:fs";
 
-import { DateMocker, mkTmpDbFile, type Jsonify } from "./helpers.ts";
-import { mockTimers } from "./setup.ts";
+import { DateMocker, mkTmpDbFile, mockTimers, type Jsonify } from "./helpers.ts";
 import { makeMockFeedItem, mockAuthor, mockFeedPayload, mockFeedResult } from "./mocks.ts";
 
 import type { FeedModel, FeedUpdateModel } from "../src/models/feed.ts";

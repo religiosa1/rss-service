@@ -2,7 +2,8 @@ import type { AuthorModel } from "../src/models/author.ts";
 import type { FeedModel, FeedUpdateModel } from "../src/models/feed.ts";
 import type { FeedItemUpdateModel } from "../src/models/feedItem.ts";
 import type { Jsonify } from "./helpers.ts";
-import { fixedDateStr } from "./setup.ts";
+
+export const fixedDateStr = "2025-01-01T10:30:00.000Z";
 
 export const mockAuthor: AuthorModel = {
 	name: "John Doe",
