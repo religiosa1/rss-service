@@ -7,7 +7,7 @@ import { feedItemSchema, feedItemUpdateSchema } from "../models/feedItem.ts";
 import { slugSchema } from "../models/slug.ts";
 import { apiKeyAuthSecurity } from "../models/apiKeyAuthSecurity.ts";
 import { apiKeyAuth } from "../middleware/apiKeyAuth.ts";
-import * as feedItemRepository from "../repositories/feedItem.ts";
+import * as feedItemRepository from "../repositories/feedItemRepository.ts";
 import { MAX_FEED_ITEMS, MAX_FEED_ITEMS_ARCHIVED } from "../constants.ts";
 
 export const feedItemController = new Hono();
@@ -151,6 +151,61 @@ feedItemController.post(
 		const payload = c.req.valid("json");
 		const item = await feedItemRepository.createFeedItem(feedSlug, payload);
 		return c.json(item, 201);
+	}
+);
+
+feedItemController.put(
+	"/",
+	describeRoute({
+		summary: "Upsert many feed items",
+		description: dedent`
+			Upsert many feed items. This endpoint allow you to get all the current feed items
+			from the source and post it to service, the service will figure out whether
+			it's a new item, requires modification (based on provided fields) or
+			should be left without changes. Resulting modification status is included
+			in the response payload.
+
+			Each item will be patched, meaning, if there's an existing item, but you
+			provided only some of its fields, only these fields will be updated. 
+			Still, you must provide all of the required fields, such as slug, title,
+			etc., so in case item doesn't exist, it can be created.
+		`,
+		operationId: "upsertFeedItems",
+		tags,
+		security: apiKeyAuthSecurity,
+		responses: {
+			200: {
+				description: "Successful response",
+				content: {
+					"application/json": {
+						schema: resolver(z.array(feedItemSchema).min(1).max(MAX_FEED_ITEMS)),
+					},
+				},
+			},
+			400: {
+				description: "Bad request",
+			},
+			401: {
+				description: "Unauthorized",
+			},
+			404: {
+				description: "Feed with the provided slug doesn't exist",
+			},
+		},
+	}),
+	apiKeyAuth,
+	validator(
+		"param",
+		z.object({
+			feedSlug: slugSchema,
+		})
+	),
+	validator("json", z.array(feedItemUpdateSchema)),
+	async (c) => {
+		const { feedSlug } = c.req.valid("param");
+		const payload = c.req.valid("json");
+		const item = await feedItemRepository.upsertMultipleFeedItems(feedSlug, payload);
+		return c.json(item, 200);
 	}
 );
 

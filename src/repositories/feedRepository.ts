@@ -49,7 +49,7 @@ export async function deleteFeed(feedSlug: string): Promise<void> {
 	}
 }
 
-type FeebDbModel = typeof schema.feed.$inferSelect & { updatedAt: number };
+type FeedDbModel = typeof schema.feed.$inferSelect & { updatedAt: number };
 function getFeedFromDb() {
 	return db
 		.select({
@@ -65,7 +65,7 @@ function getFeedFromDb() {
 		.leftJoin(schema.feedItem, eq(schema.feedItem.feedId, schema.feed.id));
 }
 
-function dbItemToFeedModel(item: FeebDbModel): FeedModel {
+function dbItemToFeedModel(item: FeedDbModel): FeedModel {
 	return {
 		...item,
 		link: generateFeedLink(item.slug),

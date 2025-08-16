@@ -34,6 +34,7 @@ All modification endpoints require a API-KEY authentication through
 - GET /feed/:feedSlug/items/ - List feed items
 - GET /feed/:feedSlug/items/all - List all items including archived
 - POST /feed/:feedSlug/items/ - Create item (auth required)
+- PUT /feed/:feedSlug/items/ - Upsert multiple items (auth required)
 - PATCH /feed/:feedSlug/items/:feedItemSlug - Update item (auth required)
 - DELETE /feed/:feedSlug/items/:feedItemSlug - Delete item (auth required)
 

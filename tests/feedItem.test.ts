@@ -10,8 +10,8 @@ import { db, resetDbConnection } from "../src/db/db.ts";
 import { migrate } from "../src/db/migrate.ts";
 import { app } from "../src/app.ts";
 import { API_KEY_HEADER_NAME, MAX_FEED_ITEMS, MAX_FEED_ITEMS_ARCHIVED } from "../src/constants.ts";
-import * as feedRepository from "../src/repositories/feed.ts";
-import * as feedItemRepository from "../src/repositories/feedItem.ts";
+import * as feedRepository from "../src/repositories/feedRepository.ts";
+import * as feedItemRepository from "../src/repositories/feedItemRepository.ts";
 import { schema } from "../src/db/index.ts";
 
 before(() => {

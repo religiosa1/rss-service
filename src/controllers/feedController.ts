@@ -8,7 +8,7 @@ import { feedUpdateSchema, feedSchema } from "../models/feed.ts";
 import { slugSchema } from "../models/slug.ts";
 import { apiKeyAuthSecurity } from "../models/apiKeyAuthSecurity.ts";
 import { apiKeyAuth } from "../middleware/apiKeyAuth.ts";
-import * as feedRepository from "../repositories/feed.ts";
+import * as feedRepository from "../repositories/feedRepository.ts";
 import * as feedService from "../services/feedService.ts";
 
 export const feedController = new Hono();

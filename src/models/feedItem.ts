@@ -2,6 +2,7 @@ import z from "zod";
 import { slugSchema } from "./slug.ts";
 import { authorScheme } from "./author.ts";
 import { FEED_ITEM_DESC_LENGTH, FEED_ITEM_TITLE_LENGTH, URL_LENGTH } from "../constants.ts";
+import { deepEqual } from "../utils/deepEqual.ts";
 
 export const feedItemUpdateSchema = z.object({
 	slug: slugSchema,
@@ -23,3 +24,24 @@ export const feedItemSchema = feedItemUpdateSchema.extend({
 	modifiedAt: z.date(),
 });
 export type FeedItemModel = z.infer<typeof feedItemSchema>;
+
+/**
+ * Check if two feed items are deep equal, considering optionality of some of the fields and not
+ * considering meta info, such as createdAt and modifiedAt.
+ */
+export function isFeedItemsValueEqual(
+	source: FeedItemUpdateModel,
+	target: FeedItemUpdateModel | FeedItemModel
+): boolean {
+	if (source.slug !== target.slug) return false;
+	if (source.title !== target.title) return false;
+	if (source.description !== target.description) return false;
+	if (source.content !== target.content) return false;
+	if (source.date !== target.date) return false;
+	if (source.link !== target.link) return false;
+	// optional fields
+	if (source.image !== undefined && source.image !== target.image) return false;
+	if (source.authors !== undefined && !deepEqual(source.authors, target.authors)) return false;
+	if (source.contributors !== undefined && !deepEqual(source.contributors, target.contributors)) return false;
+	return true;
+}
