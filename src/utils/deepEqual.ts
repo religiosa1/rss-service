@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noExplicitAny: reflection magic */
 export function deepEqual(a: unknown, b: unknown): boolean {
 	if (a === b) return true;
 	if (a == null || b == null) return a === b;

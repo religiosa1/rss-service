@@ -1,8 +1,8 @@
 import z from "zod";
-import { slugSchema } from "./slug.ts";
-import { authorScheme } from "./author.ts";
 import { FEED_ITEM_DESC_LENGTH, FEED_ITEM_TITLE_LENGTH, URL_LENGTH } from "../constants.ts";
 import { deepEqual } from "../utils/deepEqual.ts";
+import { authorScheme } from "./author.ts";
+import { slugSchema } from "./slug.ts";
 
 export const feedItemUpdateSchema = z.object({
 	slug: slugSchema,

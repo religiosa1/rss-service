@@ -15,7 +15,7 @@ export function partition<T>(
 	const positiveBucket: T[] = [];
 	const negativeBucket: T[] = [];
 	for (let i = 0; i < items.length; i++) {
-		const item = items[i]!;
+		const item = items[i];
 		const targetBucket = predicate(item, i, items) ? positiveBucket : negativeBucket;
 		targetBucket.push(item);
 	}

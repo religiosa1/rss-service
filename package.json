@@ -15,7 +15,7 @@
 	"main": "index.ts",
 	"scripts": {
 		"start": "NODE_ENV=production node --env-file-if-exists .env ./index.ts",
-		"dev": "node --env-file-if-exists .env --watch ./index.ts",
+		"dev": "node --watch ./index.ts",
 		"test": "NODE_ENV=test node --test **/*.test.{js,ts}",
 		"test:update-snapshots": "NODE_ENV=test node --test-update-snapshots --test **/*.test.{js,ts}",
 		"type-check": "tsc --noEmit",
@@ -39,6 +39,7 @@
 		"zod-openapi": "^4.2.4"
 	},
 	"devDependencies": {
+		"@biomejs/biome": "2.2.0",
 		"@types/node": "^24.2.1",
 		"typescript": "^5.9.2"
 	}

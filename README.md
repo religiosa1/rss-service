@@ -11,10 +11,23 @@ Uses [feed](https://github.com/jpmonette/feed) library for the actual
 rss generation.
 
 The initial reason behind it -- to provide feeds for some websites, scraping
-them with n8n flow and posting the result to this service, so I can access the
-feed through a reader, without manually checking their websites.
+them with some automation flow (n8n, python scripts, etc.) and posting the
+result to this service, so I can access the feed through a reader, without
+manually checking their websites.
 
 Requires node v22.11 or higher, as it uses direct typescript execution.
+
+## The intended usage flow:
+
+Create the intended feed with `POST /feed` endpoint (see openapi docs).
+
+1. Gather some content you want to have an RSS field (gather posts from your
+   existing blog, ethically scrap some other 3d party blog with a python script,
+   etc.). This can be run on schedule.
+
+2. Call `PUT /feed/:feedSlug/items`, providing everything you gathered in the
+   body.
+3. Subscribe to the RSS feed in `GET /feed/:feedSlug`
 
 ## API Endpoints
 

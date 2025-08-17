@@ -1,10 +1,10 @@
+import * as assert from "node:assert";
 import { describe, it } from "node:test";
 import { coerceNullish } from "./coerceNullish.ts";
-import * as assert from "node:assert";
 
 const expectTypeOf = <T>(_value: T) => ({
 	toBe<V extends T>() {
-		return undefined as V as any;
+		return undefined as V as unknown;
 	},
 });
 

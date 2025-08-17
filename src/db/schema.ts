@@ -1,5 +1,5 @@
-import { index, integer, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
 import { desc } from "drizzle-orm/sql";
+import { index, integer, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
 import type { AuthorModel } from "../models/author.ts";
 
 export const feed = sqliteTable("feed", {

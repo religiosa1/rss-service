@@ -5,10 +5,10 @@
 
 import { Hono } from "hono";
 import { logger } from "hono/logger";
+import { describeRoute } from "hono-openapi";
 
 import { feedController } from "./controllers/feedController.ts";
 import { feedItemController } from "./controllers/feedItemController.ts";
-import { describeRoute } from "hono-openapi";
 
 export const app = new Hono();
 

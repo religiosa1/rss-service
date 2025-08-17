@@ -1,8 +1,8 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import { env } from "hono/adapter";
 import { createMiddleware } from "hono/factory";
-import { API_KEY_HEADER_NAME } from "../constants.ts";
-import { createHash, timingSafeEqual } from "node:crypto";
 import { HTTPException } from "hono/http-exception";
+import { API_KEY_HEADER_NAME } from "../constants.ts";
 
 export const apiKeyAuth = createMiddleware(async (c, next) => {
 	const apiKey = env<NodeJS.ProcessEnv>(c, process.env.NODE_ENV === "test" ? "workerd" : undefined)?.API_KEY;

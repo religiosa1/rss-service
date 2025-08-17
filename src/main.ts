@@ -5,10 +5,10 @@
  * @module src/main
  */
 
-import { migrate } from "./db/index.ts";
-import { port } from "./globalContext.ts";
 import type { serve } from "@hono/node-server";
 import { app } from "./app.ts";
+import { migrate } from "./db/index.ts";
+import { port } from "./globalContext.ts";
 
 if (!process.env.DB_SKIP_MIGRATIONS) {
 	console.log("Running migrations...");

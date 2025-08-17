@@ -1,7 +1,8 @@
 import z from "zod";
-import { slugSchema } from "./slug.ts";
-import { authorScheme } from "./author.ts";
+
 import { FEED_DESC_LENGTH, FEED_TITLE_LENGTH, URL_LENGTH } from "../constants.ts";
+import { authorScheme } from "./author.ts";
+import { slugSchema } from "./slug.ts";
 
 export const feedUpdateSchema = z.object({
 	slug: slugSchema,

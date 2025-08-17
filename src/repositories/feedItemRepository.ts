@@ -1,7 +1,7 @@
-import { and, eq, desc, notInArray, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, notInArray } from "drizzle-orm";
 import { MAX_FEED_ITEMS, MAX_FEED_ITEMS_ARCHIVED } from "../constants.ts";
 import { db, schema } from "../db/index.ts";
-import { isFeedItemsValueEqual, type FeedItemModel, type FeedItemUpdateModel } from "../models/feedItem.ts";
+import { type FeedItemModel, type FeedItemUpdateModel, isFeedItemsValueEqual } from "../models/feedItem.ts";
 import { mapDbError, raise } from "../utils/errors.ts";
 import { partition } from "../utils/partition.ts";
 

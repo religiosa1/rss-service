@@ -1,13 +1,13 @@
 import { Hono } from "hono";
-import z from "zod";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/zod";
 import { dedent } from "ts-dedent";
+import z from "zod";
 
-import { feedUpdateSchema, feedSchema } from "../models/feed.ts";
-import { slugSchema } from "../models/slug.ts";
-import { apiKeyAuthSecurity } from "../models/apiKeyAuthSecurity.ts";
 import { apiKeyAuth } from "../middleware/apiKeyAuth.ts";
+import { apiKeyAuthSecurity } from "../models/apiKeyAuthSecurity.ts";
+import { feedSchema, feedUpdateSchema } from "../models/feed.ts";
+import { slugSchema } from "../models/slug.ts";
 import * as feedRepository from "../repositories/feedRepository.ts";
 import * as feedService from "../services/feedService.ts";
 

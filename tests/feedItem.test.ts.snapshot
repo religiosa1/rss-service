@@ -58,7 +58,7 @@ exports[`feed items > PATCH /feed/:feedSlug/items/:feedItemSlug > updates an exi
   "slug": "test1",
   "title": "another title",
   "description": "feed item description",
-  "content": "bizbar",
+  "content": "qwerty",
   "date": "2025-01-01T10:30:00.000Z",
   "image": null,
   "link": "http://example.com/test1",

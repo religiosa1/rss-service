@@ -1,6 +1,6 @@
-import { mock } from "node:test";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { mock } from "node:test";
 
 import { fixedDateStr } from "./mocks.ts";
 

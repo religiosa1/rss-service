@@ -1,17 +1,18 @@
-import { before, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { unlinkSync } from "node:fs";
+import { before, beforeEach, describe, it } from "node:test";
+import { app } from "../src/app.ts";
+import { API_KEY_HEADER_NAME, MAX_FEED_ITEMS, MAX_FEED_ITEMS_ARCHIVED } from "../src/constants.ts";
+
+import { db, resetDbConnection } from "../src/db/db.ts";
+import { schema } from "../src/db/index.ts";
+import { migrate } from "../src/db/migrate.ts";
+import type { FeedItemModel } from "../src/models/feedItem.ts";
+import * as feedItemRepository from "../src/repositories/feedItemRepository.ts";
+import * as feedRepository from "../src/repositories/feedRepository.ts";
 
 import { DateMocker, mkTmpDbFile, mockTimers } from "./helpers.ts";
 import { makeMockFeedItem, mockFeedPayload } from "./mocks.ts";
-
-import { db, resetDbConnection } from "../src/db/db.ts";
-import { migrate } from "../src/db/migrate.ts";
-import { app } from "../src/app.ts";
-import { API_KEY_HEADER_NAME, MAX_FEED_ITEMS, MAX_FEED_ITEMS_ARCHIVED } from "../src/constants.ts";
-import * as feedRepository from "../src/repositories/feedRepository.ts";
-import * as feedItemRepository from "../src/repositories/feedItemRepository.ts";
-import { schema } from "../src/db/index.ts";
 
 before(() => {
 	mockTimers();
@@ -45,19 +46,19 @@ describe("feed items", () => {
 			t.assert.snapshot(responsePayload);
 		});
 
-		it("retrieves only ${MAX_FEED_ITEMS}, anything beyond that is considered archived", async () => {
+		it("retrieves only MAX_FEED_ITEMS, anything beyond that is considered archived", async () => {
 			using dateMocker = new DateMocker();
 			await feedRepository.createFeed(mockFeedPayload);
 			for (let i = 0; i < MAX_FEED_ITEMS + 5; i++) {
 				const date = dateMocker.advanceTime(3000);
-				await feedItemRepository.createFeedItem(mockFeedPayload.slug, makeMockFeedItem("test"+i, date));
+				await feedItemRepository.createFeedItem(mockFeedPayload.slug, makeMockFeedItem("test" + i, date));
 			}
 			const res = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}/items`);
 			const responsePayload = await res.json();
 			assert.equal(res.status, 200);
 			assert.equal(responsePayload.length, MAX_FEED_ITEMS);
-			assert.equal(responsePayload.at(-1).id, 6); 
-			assert.equal(responsePayload.at(0).id, 5 + MAX_FEED_ITEMS); 
+			assert.equal(responsePayload.at(-1).id, 6);
+			assert.equal(responsePayload.at(0).id, 5 + MAX_FEED_ITEMS);
 		});
 
 		it("returns empty list for empty feeds", async () => {
@@ -85,16 +86,16 @@ describe("feed items", () => {
 			await feedRepository.createFeed(mockFeedPayload);
 			for (let i = 0; i < MAX_FEED_ITEMS + 5; i++) {
 				const date = dateMocker.advanceTime(3000);
-				await feedItemRepository.createFeedItem(mockFeedPayload.slug, makeMockFeedItem("test"+i, date));
+				await feedItemRepository.createFeedItem(mockFeedPayload.slug, makeMockFeedItem("test" + i, date));
 			}
 			const res = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}/items/all`);
-			const responsePayload = await res.json();
+			const responsePayload: Array<FeedItemModel & { archived: boolean }> = await res.json();
 			assert.equal(res.status, 200);
 			assert.equal(responsePayload.length, MAX_FEED_ITEMS + 5);
-			assert.equal(responsePayload.at(-1).id, 1); 
-			assert.equal(responsePayload.at(0).id, MAX_FEED_ITEMS + 5);
-			assert(responsePayload.slice(0, MAX_FEED_ITEMS).every((i: any) => !i.archived));
-			assert(responsePayload.slice(MAX_FEED_ITEMS).every((i: any) => i.archived));
+			assert.equal(responsePayload.at(-1)?.id, 1);
+			assert.equal(responsePayload.at(0)?.id, MAX_FEED_ITEMS + 5);
+			assert(responsePayload.slice(0, MAX_FEED_ITEMS).every((i) => !i.archived));
+			assert(responsePayload.slice(MAX_FEED_ITEMS).every((i) => i.archived));
 		});
 
 		it("returns 400 status if feed slug is invalid in path", async () => {
@@ -117,9 +118,9 @@ describe("feed items", () => {
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify(makeMockFeedItem("test1"))
+				body: JSON.stringify(makeMockFeedItem("test1")),
 			});
-			assert.equal(res.status, 201)
+			assert.equal(res.status, 201);
 			const items = await feedItemRepository.getFeedItems(mockFeedPayload.slug);
 			assert.equal(items.length, 1);
 		});
@@ -134,7 +135,7 @@ describe("feed items", () => {
 					headers: {
 						"Content-Type": "application/json",
 					},
-					body: JSON.stringify(makeMockFeedItem("test"+i, date))
+					body: JSON.stringify(makeMockFeedItem("test" + i, date)),
 				});
 			}
 			const count = await db.$count(schema.feedItem);
@@ -147,7 +148,7 @@ describe("feed items", () => {
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify(makeMockFeedItem("test1"))
+				body: JSON.stringify(makeMockFeedItem("test1")),
 			});
 			assert.equal(res.status, 400);
 		});
@@ -159,13 +160,14 @@ describe("feed items", () => {
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify({...makeMockFeedItem("test1"), description: 123 })
+				body: JSON.stringify({ ...makeMockFeedItem("test1"), description: 123 }),
 			});
 			assert.equal(res.status, 400);
 		});
 
 		it("returns 400 on missing required fields in item", async () => {
 			await feedRepository.createFeed(mockFeedPayload);
+			// biome-ignore lint/suspicious/noExplicitAny: explicitly messing up with the object
 			const payload: any = makeMockFeedItem("test1");
 			delete payload.title;
 			const res = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}/items`, {
@@ -173,7 +175,7 @@ describe("feed items", () => {
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify(payload)
+				body: JSON.stringify(payload),
 			});
 			assert.equal(res.status, 400);
 		});
@@ -184,7 +186,7 @@ describe("feed items", () => {
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify(makeMockFeedItem("test1"))
+				body: JSON.stringify(makeMockFeedItem("test1")),
 			});
 			assert.equal(res.status, 404);
 		});
@@ -202,15 +204,15 @@ describe("feed items", () => {
 					headers: {
 						"Content-Type": "application/json",
 					},
-					body: JSON.stringify(makeMockFeedItem("test1"))
+					body: JSON.stringify(makeMockFeedItem("test1")),
 				});
 			}
 		});
 
 		it("items with the same slug can be inserted in different feeds", async () => {
 			await feedRepository.createFeed(mockFeedPayload);
-			await feedRepository.createFeed({...mockFeedPayload, slug: "test2"});
-			const initialResp = await create( mockFeedPayload.slug);
+			await feedRepository.createFeed({ ...mockFeedPayload, slug: "test2" });
+			const initialResp = await create(mockFeedPayload.slug);
 			assert.equal(initialResp.status, 201);
 			const secondResp = await create("test2");
 			assert.equal(secondResp.status, 201);
@@ -221,7 +223,7 @@ describe("feed items", () => {
 					headers: {
 						"Content-Type": "application/json",
 					},
-					body: JSON.stringify(makeMockFeedItem("test1"))
+					body: JSON.stringify(makeMockFeedItem("test1")),
 				});
 			}
 		});
@@ -235,20 +237,24 @@ describe("feed items", () => {
 			assert.equal(authorizedResp.status, 201);
 
 			async function makeRequest(key: string | undefined) {
-				return await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}/items`, {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
+				return await app.request(
+					`/feed/${encodeURIComponent(mockFeedPayload.slug)}/items`,
+					{
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
 							...(key
 								? {
 										[API_KEY_HEADER_NAME]: key,
 									}
 								: {}),
+						},
+						body: JSON.stringify(makeMockFeedItem("test1")),
 					},
-					body: JSON.stringify(makeMockFeedItem("test1")),
-				}, {
-					API_KEY: testKey,
-				} satisfies NodeJS.ProcessEnv);
+					{
+						API_KEY: testKey,
+					} satisfies NodeJS.ProcessEnv
+				);
 			}
 		});
 	}); // POST /feed/:feedSlug/items/
@@ -262,7 +268,7 @@ describe("feed items", () => {
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify({ title: "another title", content: "bizbar" }),
+				body: JSON.stringify({ title: "another title", content: "qwerty" }),
 			});
 			assert.equal(resp.status, 200);
 			const respPayload = await resp.json();
@@ -372,20 +378,20 @@ describe("feed items", () => {
 						method: "PATCH",
 						headers: {
 							"Content-Type": "application/json",
-								...(key
-									? {
-											[API_KEY_HEADER_NAME]: key,
-										}
-									: {}),
+							...(key
+								? {
+										[API_KEY_HEADER_NAME]: key,
+									}
+								: {}),
 						},
-						body: JSON.stringify({ description: "awwesqwer" }),
+						body: JSON.stringify({ description: "qwerty" }),
 					},
 					{
 						API_KEY: testKey,
 					} satisfies NodeJS.ProcessEnv
 				);
 			}
-		}); 
+		});
 	}); // PATCH /feed/:feedSlug/items/:feedItemSlug
 
 	describe("DELETE /feed/:feedSlug/items/:feedItemSlug", () => {
@@ -450,14 +456,14 @@ describe("feed items", () => {
 						headers: key
 							? {
 									[API_KEY_HEADER_NAME]: key,
-									}
-								: undefined,
+								}
+							: undefined,
 					},
 					{
 						API_KEY: testKey,
 					} satisfies NodeJS.ProcessEnv
 				);
 			}
-		}); 
+		});
 	}); // DELETE /feed/:feedSlug/items/:feedItemSlug
 });

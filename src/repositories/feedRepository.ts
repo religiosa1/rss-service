@@ -1,4 +1,4 @@
-import { getTableColumns, eq, sql } from "drizzle-orm";
+import { eq, getTableColumns, sql } from "drizzle-orm";
 import { db, schema } from "../db/index.ts";
 import type { FeedModel, FeedUpdateModel } from "../models/feed.ts";
 import { mapDbError, raise } from "../utils/errors.ts";

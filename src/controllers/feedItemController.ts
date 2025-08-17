@@ -1,14 +1,15 @@
 import { Hono } from "hono";
-import z from "zod";
-import { dedent } from "ts-dedent";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/zod";
+import { dedent } from "ts-dedent";
+import z from "zod";
+
+import { MAX_FEED_ITEMS, MAX_FEED_ITEMS_ARCHIVED } from "../constants.ts";
+import { apiKeyAuth } from "../middleware/apiKeyAuth.ts";
+import { apiKeyAuthSecurity } from "../models/apiKeyAuthSecurity.ts";
 import { feedItemSchema, feedItemUpdateSchema } from "../models/feedItem.ts";
 import { slugSchema } from "../models/slug.ts";
-import { apiKeyAuthSecurity } from "../models/apiKeyAuthSecurity.ts";
-import { apiKeyAuth } from "../middleware/apiKeyAuth.ts";
 import * as feedItemRepository from "../repositories/feedItemRepository.ts";
-import { MAX_FEED_ITEMS, MAX_FEED_ITEMS_ARCHIVED } from "../constants.ts";
 
 export const feedItemController = new Hono();
 

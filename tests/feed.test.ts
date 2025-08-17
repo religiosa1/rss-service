@@ -1,17 +1,15 @@
-import { before, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { unlinkSync } from "node:fs";
-
-import { DateMocker, mkTmpDbFile, mockTimers, type Jsonify } from "./helpers.ts";
-import { makeMockFeedItem, mockAuthor, mockFeedPayload, mockFeedResult } from "./mocks.ts";
-
-import type { FeedModel, FeedUpdateModel } from "../src/models/feed.ts";
-import { resetDbConnection } from "../src/db/db.ts";
-import { migrate } from "../src/db/migrate.ts";
+import { before, beforeEach, describe, it } from "node:test";
 import { app } from "../src/app.ts";
 import { API_KEY_HEADER_NAME } from "../src/constants.ts";
-import * as feedRepository from "../src/repositories/feedRepository.ts";
+import { resetDbConnection } from "../src/db/db.ts";
+import { migrate } from "../src/db/migrate.ts";
+import type { FeedModel, FeedUpdateModel } from "../src/models/feed.ts";
 import * as feedItemRepository from "../src/repositories/feedItemRepository.ts";
+import * as feedRepository from "../src/repositories/feedRepository.ts";
+import { DateMocker, type Jsonify, mkTmpDbFile, mockTimers } from "./helpers.ts";
+import { makeMockFeedItem, mockAuthor, mockFeedPayload, mockFeedResult } from "./mocks.ts";
 
 before(() => {
 	mockTimers();
@@ -28,11 +26,10 @@ beforeEach(async (t) => {
 
 	if ("after" in t) {
 		t.after(() => {
-			unlinkSync(tmpDbFile)
+			unlinkSync(tmpDbFile);
 		});
 	}
 });
-
 
 describe("feed", () => {
 	describe("GET /feed", () => {
@@ -69,11 +66,13 @@ describe("feed", () => {
 
 			dateMocker.advanceTime(3000);
 			// new item will be published "before", it's creation, so it createdAt will be newer, but actual date is older
-			await feedItemRepository.createFeedItem(mockFeedPayload.slug, makeMockFeedItem("test2", new Date(secondDate.getTime() - 1000)));
+			await feedItemRepository.createFeedItem(
+				mockFeedPayload.slug,
+				makeMockFeedItem("test2", new Date(secondDate.getTime() - 1000))
+			);
 			const thirdPayload = await getFeed();
 			// we're still be using second date value, as it's date is newer
 			assert.equal(thirdPayload.updatedAt, secondDate.toISOString());
-
 
 			async function getFeed() {
 				const res = await app.request("/feed");
@@ -86,7 +85,7 @@ describe("feed", () => {
 		});
 
 		it("returns the provided author object", async () => {
-			await feedRepository.createFeed({...mockFeedPayload, author: mockAuthor });
+			await feedRepository.createFeed({ ...mockFeedPayload, author: mockAuthor });
 			const res = await app.request("/feed");
 			const responsePayload = await res.json();
 			assert.deepEqual(responsePayload[0].author, mockAuthor);
@@ -97,8 +96,14 @@ describe("feed", () => {
 		it("returns a rss feed", async (t) => {
 			await feedRepository.createFeed(mockFeedPayload);
 			using dateMocker = new DateMocker();
-			await feedItemRepository.createFeedItem(mockFeedPayload.slug, makeMockFeedItem("test1", dateMocker.advanceTime(1000)));
-			await feedItemRepository.createFeedItem(mockFeedPayload.slug, makeMockFeedItem("test2",  dateMocker.advanceTime(1000)));
+			await feedItemRepository.createFeedItem(
+				mockFeedPayload.slug,
+				makeMockFeedItem("test1", dateMocker.advanceTime(1000))
+			);
+			await feedItemRepository.createFeedItem(
+				mockFeedPayload.slug,
+				makeMockFeedItem("test2", dateMocker.advanceTime(1000))
+			);
 			const res = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}`);
 			assert.equal(res.status, 200);
 			assert.equal(res.headers.get("Content-Type"), "application/rss+xml");
@@ -108,12 +113,12 @@ describe("feed", () => {
 		it("returns 400 on invalid feedSlug param", async () => {
 			const res = await app.request(`/feed/$$$`);
 			assert.equal(res.status, 400);
-		})
+		});
 
 		it("returns 404 if non-existing feedSlug is specified", async () => {
 			const res = await app.request(`/feed/bad-slug`);
 			assert.equal(res.status, 404);
-		})
+		});
 	}); // GET /feed/:feedSlug
 
 	describe("POST /feed", () => {
@@ -138,7 +143,7 @@ describe("feed", () => {
 				},
 				body: JSON.stringify({
 					...mockFeedPayload,
-					author: mockAuthor
+					author: mockAuthor,
 				} satisfies FeedUpdateModel),
 			});
 			const responsePayload = await res.json();
@@ -204,7 +209,7 @@ describe("feed", () => {
 							...(key
 								? {
 										[API_KEY_HEADER_NAME]: key,
-								  }
+									}
 								: {}),
 						},
 						body: JSON.stringify(mockFeedPayload),
@@ -239,7 +244,6 @@ describe("feed", () => {
 			} satisfies Jsonify<FeedModel>);
 			assert.equal(resp.status, 200);
 		});
-
 
 		it("allows to rename the feed", async () => {
 			using dateMocker = new DateMocker();
@@ -278,7 +282,7 @@ describe("feed", () => {
 		});
 
 		it("allows to delete an existing author", async () => {
-			await feedRepository.createFeed({...mockFeedPayload, author: mockAuthor });
+			await feedRepository.createFeed({ ...mockFeedPayload, author: mockAuthor });
 			const resp = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}`, {
 				method: "PATCH",
 				headers: {
@@ -292,13 +296,13 @@ describe("feed", () => {
 		});
 
 		it("allows to modify an existing author", async () => {
-			await feedRepository.createFeed({...mockFeedPayload, author: mockAuthor });
+			await feedRepository.createFeed({ ...mockFeedPayload, author: mockAuthor });
 			const resp = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}`, {
 				method: "PATCH",
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify({ author: { name: "Jane Doe"} } satisfies Partial<FeedUpdateModel>),
+				body: JSON.stringify({ author: { name: "Jane Doe" } } satisfies Partial<FeedUpdateModel>),
 			});
 			const responsePayload = await resp.json();
 			assert.deepEqual(responsePayload.author, { name: "Jane Doe" });
@@ -328,9 +332,9 @@ describe("feed", () => {
 		});
 
 		it("returns 409 on attempts to update a slug to already existing value", async () => {
-			const newSlug = "test2"
+			const newSlug = "test2";
 			await feedRepository.createFeed(mockFeedPayload);
-			await feedRepository.createFeed({...mockFeedPayload, slug: newSlug });
+			await feedRepository.createFeed({ ...mockFeedPayload, slug: newSlug });
 
 			const resp = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}`, {
 				method: "PATCH",
@@ -383,7 +387,7 @@ describe("feed", () => {
 					} satisfies NodeJS.ProcessEnv
 				);
 			}
-		}); 
+		});
 	}); // PATCH /feed/:feedSlug
 
 	describe("DELETE /feed/:feedSlug", () => {
@@ -429,6 +433,6 @@ describe("feed", () => {
 					} satisfies NodeJS.ProcessEnv
 				);
 			}
-		}); 
+		});
 	}); // DELETE /feed/:feedSlug
 });
