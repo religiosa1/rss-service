@@ -15,13 +15,41 @@ describe("feed", () => {
 	describe("GET /feed", () => {
 		it("returns a list of existing feeds", async () => {
 			await feedRepository.createFeed(mockFeedPayload);
-			await feedRepository.createFeed({ ...mockFeedPayload, slug: "test2" });
+			await feedRepository.createFeed({ ...mockFeedPayload, slug: "test-feed-2" });
+
+			using dateMocker = new DateMocker();
+			// Adding a couple of items, to make sure grouping after join works as expected.
+			await feedItemRepository.createFeedItem(
+				mockFeedPayload.slug,
+				makeMockFeedItem("test1", dateMocker.advanceTime(10_000))
+			);
+			const latestDate = dateMocker.advanceTime(5_000);
+			await feedItemRepository.createFeedItem(mockFeedPayload.slug, makeMockFeedItem("test2", latestDate));
 
 			const res = await app.request("/feed");
 			const responsePayload = await res.json();
 			assert.deepEqual(responsePayload, [
-				mockFeedResult,
-				{ ...mockFeedResult, id: 2, slug: "test2", link: "/feed/test2" },
+				{
+					...mockFeedResult,
+					updatedAt: latestDate.toISOString(),
+				},
+				{ ...mockFeedResult, id: 2, slug: "test-feed-2", link: "/feed/test-feed-2" },
+			]);
+			assert.equal(res.status, 200);
+		});
+
+		it("returns date of feed creation if there's no items inside of it", async () => {
+			using dateMocker = new DateMocker();
+			const initialDate = dateMocker.getCurrentTime();
+			await feedRepository.createFeed(mockFeedPayload);
+
+			const res = await app.request("/feed");
+			const responsePayload = await res.json();
+			assert.deepEqual(responsePayload, [
+				{
+					...mockFeedResult,
+					updatedAt: initialDate.toISOString(),
+				},
 			]);
 			assert.equal(res.status, 200);
 		});
@@ -84,7 +112,7 @@ describe("feed", () => {
 			await feedRepository.createFeed(mockFeedPayload);
 			using dateMocker = new DateMocker();
 			await feedItemRepository.createFeedItem(mockFeedPayload.slug, {
-				...makeMockFeedItem("test1", dateMocker.advanceTime(1000)),
+				...makeMockFeedItem("test1", dateMocker.advanceTime(5_000)),
 				authors: [
 					{
 						name: "John Doe",
@@ -97,7 +125,7 @@ describe("feed", () => {
 				],
 			});
 			await feedItemRepository.createFeedItem(mockFeedPayload.slug, {
-				...makeMockFeedItem("test2", dateMocker.advanceTime(1000)),
+				...makeMockFeedItem("test2", dateMocker.advanceTime(10_000)),
 				authors: [
 					{
 						name: "John Doe",

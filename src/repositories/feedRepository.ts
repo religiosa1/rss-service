@@ -56,13 +56,14 @@ function getFeedFromDb() {
 			...getTableColumns(schema.feed),
 			updatedAt: sql<number>`
 				COALESCE(
-					MAX(${schema.feedItem.date}) OVER (PARTITION BY ${schema.feedItem.feedId}),
+					MAX(${schema.feedItem.date}),
 					${schema.feed.createdAt}
 				)
 			`.as("updatedAt"),
 		})
 		.from(schema.feed)
-		.leftJoin(schema.feedItem, eq(schema.feedItem.feedId, schema.feed.id));
+		.leftJoin(schema.feedItem, eq(schema.feedItem.feedId, schema.feed.id))
+		.groupBy(schema.feed.id);
 }
 
 function dbItemToFeedModel(item: FeedDbModel): FeedModel {
