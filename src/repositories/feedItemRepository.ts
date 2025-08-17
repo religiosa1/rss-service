@@ -84,17 +84,19 @@ export async function upsertMultipleFeedItems(
 	});
 
 	const [insertedItems, updatedItems] = await db.transaction(async (tx) => {
-		const insertedItems = await tx
-			.insert(schema.feedItem)
-			.values(
-				payloadItemsToInsert.map((item) => ({
-					...item,
-					feedId,
-					createdAt: ts,
-					modifiedAt: ts,
-				}))
-			)
-			.returning();
+		const insertedItems = !payloadItemsToInsert.length
+			? []
+			: await tx
+					.insert(schema.feedItem)
+					.values(
+						payloadItemsToInsert.map((item) => ({
+							...item,
+							feedId,
+							createdAt: ts,
+							modifiedAt: ts,
+						}))
+					)
+					.returning();
 
 		const updatedItems: FeedItemModel[] = await Array.fromAsync(payloadItemsToUpdate, (item) =>
 			tx

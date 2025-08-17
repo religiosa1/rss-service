@@ -68,6 +68,29 @@ describe("PUT /feed/:feedSlug/items/", () => {
 		t.assert.equal(res.status, 200);
 	});
 
+	it("successfully handles no new items in the payload", async (t) => {
+		using dateMocker = new DateMocker();
+		const oldDate = dateMocker.getCurrentTime();
+		await feedRepository.createFeed(mockFeedPayload);
+		const item = makeMockFeedItem("test");
+		await feedItemRepository.createFeedItem(mockFeedPayload.slug, item);
+		dateMocker.advanceTime(1000);
+
+		const res = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}/items`, {
+			method: "PUT",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify([item]),
+		});
+		const items: Jsonify<FeedItemModel[]> = await res.json();
+		t.assert.equal(items[0].slug, item.slug);
+		t.assert.equal(items[0].createdAt, oldDate.toISOString());
+		t.assert.equal(items[0].modifiedAt, oldDate.toISOString(), "is not modified -- should be old date");
+
+		t.assert.equal(res.status, 200);
+	});
+
 	it("returns 400 status if feed slug is invalid in path", async (t) => {
 		await feedRepository.createFeed(mockFeedPayload);
 		const res = await app.request(`/feed/!!!/items`, {
