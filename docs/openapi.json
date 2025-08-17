@@ -1,0 +1,2131 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "rss-service",
+    "description": "Microservice for providing RSS feeds",
+    "version": "0.0.1"
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
+      }
+    },
+    "schemas": {}
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local Server"
+    }
+  ],
+  "paths": {
+    "/metrics": {
+      "get": {
+        "responses": {},
+        "operationId": "getMetrics",
+        "parameters": [],
+        "summary": "Prometheus Rate-Error-Duration metrics"
+      }
+    },
+    "/feed": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "slug": {
+                        "type": "string",
+                        "pattern": "^[a-zA-Z0-9_-]+$",
+                        "minLength": 1,
+                        "maxLength": 512
+                      },
+                      "title": {
+                        "type": "string",
+                        "maxLength": 512
+                      },
+                      "description": {
+                        "type": "string",
+                        "maxLength": 8192
+                      },
+                      "image": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "uri",
+                        "maxLength": 2083
+                      },
+                      "favicon": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "uri",
+                        "maxLength": 2083
+                      },
+                      "language": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "minLength": 2,
+                        "maxLength": 128
+                      },
+                      "copyright": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 512
+                      },
+                      "author": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "name": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "maxLength": 254
+                          },
+                          "email": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "maxLength": 254
+                          },
+                          "link": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri",
+                            "maxLength": 2083
+                          },
+                          "avatar": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri",
+                            "maxLength": 2083
+                          }
+                        }
+                      },
+                      "id": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      },
+                      "link": {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      "updatedAt": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      },
+                      "modifiedAt": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "slug",
+                      "title",
+                      "description",
+                      "id",
+                      "link",
+                      "updatedAt",
+                      "createdAt",
+                      "modifiedAt"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "listFeeds",
+        "tags": [
+          "feed"
+        ],
+        "parameters": [],
+        "summary": "List existing feeds"
+      },
+      "post": {
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "slug": {
+                      "type": "string",
+                      "pattern": "^[a-zA-Z0-9_-]+$",
+                      "minLength": 1,
+                      "maxLength": 512
+                    },
+                    "title": {
+                      "type": "string",
+                      "maxLength": 512
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 8192
+                    },
+                    "image": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "uri",
+                      "maxLength": 2083
+                    },
+                    "favicon": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "uri",
+                      "maxLength": 2083
+                    },
+                    "language": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "minLength": 2,
+                      "maxLength": 128
+                    },
+                    "copyright": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 512
+                    },
+                    "author": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "name": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "maxLength": 254
+                        },
+                        "email": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "maxLength": 254
+                        },
+                        "link": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "uri",
+                          "maxLength": 2083
+                        },
+                        "avatar": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "uri",
+                          "maxLength": 2083
+                        }
+                      }
+                    },
+                    "id": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    },
+                    "link": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "modifiedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "slug",
+                    "title",
+                    "description",
+                    "id",
+                    "link",
+                    "updatedAt",
+                    "createdAt",
+                    "modifiedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "409": {
+            "description": "Feed with this slug already exists"
+          }
+        },
+        "operationId": "createFeed",
+        "tags": [
+          "feed"
+        ],
+        "parameters": [],
+        "summary": "Create a new feed",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "slug": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9_-]+$",
+                    "minLength": 1,
+                    "maxLength": 512
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 512
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 8192
+                  },
+                  "image": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uri",
+                    "maxLength": 2083
+                  },
+                  "favicon": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uri",
+                    "maxLength": 2083
+                  },
+                  "language": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "minLength": 2,
+                    "maxLength": 128
+                  },
+                  "copyright": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 512
+                  },
+                  "author": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 254
+                      },
+                      "email": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 254
+                      },
+                      "link": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "uri",
+                        "maxLength": 2083
+                      },
+                      "avatar": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "uri",
+                        "maxLength": 2083
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "slug",
+                  "title",
+                  "description"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/feed/{feedSlug}": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/rss+xml": {}
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "No such feed"
+          }
+        },
+        "operationId": "getFeedRss",
+        "tags": [
+          "feed"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feedSlug",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "required": true
+          }
+        ],
+        "summary": "Get a feed in RSS format"
+      },
+      "patch": {
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "slug": {
+                      "type": "string",
+                      "pattern": "^[a-zA-Z0-9_-]+$",
+                      "minLength": 1,
+                      "maxLength": 512
+                    },
+                    "title": {
+                      "type": "string",
+                      "maxLength": 512
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 8192
+                    },
+                    "image": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "uri",
+                      "maxLength": 2083
+                    },
+                    "favicon": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "uri",
+                      "maxLength": 2083
+                    },
+                    "language": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "minLength": 2,
+                      "maxLength": 128
+                    },
+                    "copyright": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 512
+                    },
+                    "author": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "name": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "maxLength": 254
+                        },
+                        "email": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "maxLength": 254
+                        },
+                        "link": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "uri",
+                          "maxLength": 2083
+                        },
+                        "avatar": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "uri",
+                          "maxLength": 2083
+                        }
+                      }
+                    },
+                    "id": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    },
+                    "link": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "modifiedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "slug",
+                    "title",
+                    "description",
+                    "id",
+                    "link",
+                    "updatedAt",
+                    "createdAt",
+                    "modifiedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Feed with the provided slug doesn't exist"
+          },
+          "409": {
+            "description": "Updated slug value already exists"
+          }
+        },
+        "operationId": "updateFeed",
+        "tags": [
+          "feed"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feedSlug",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "required": true
+          }
+        ],
+        "summary": "Update existing feed values",
+        "description": "Updates the existing feed model (by slug provided in path) with the values\nprovided in the payload. Please notice, that if you provide author value,\nif it contains null/undefined in place of some of its fields, it means \n\"remove the provided field\", i.e. field patch is not deep, and if author\nis present in the payload it must contain of the old fields in it.\n\nIf you pass author as null it will be removed, if you don't pass author\nfield at all, the existing value will not be changed.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "slug": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9_-]+$",
+                    "minLength": 1,
+                    "maxLength": 512
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 512
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 8192
+                  },
+                  "image": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uri",
+                    "maxLength": 2083
+                  },
+                  "favicon": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uri",
+                    "maxLength": 2083
+                  },
+                  "language": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "minLength": 2,
+                    "maxLength": 128
+                  },
+                  "copyright": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 512
+                  },
+                  "author": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 254
+                      },
+                      "email": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 254
+                      },
+                      "link": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "uri",
+                        "maxLength": 2083
+                      },
+                      "avatar": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "uri",
+                        "maxLength": 2083
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "responses": {
+          "204": {
+            "description": "Successful response"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Feed with the provided slug doesn't exist"
+          }
+        },
+        "operationId": "deleteFeed",
+        "tags": [
+          "feed"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feedSlug",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "required": true
+          }
+        ],
+        "summary": "Delete an existing feed",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/feed/{feedSlug}/items": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "slug": {
+                        "type": "string",
+                        "pattern": "^[a-zA-Z0-9_-]+$",
+                        "minLength": 1,
+                        "maxLength": 512
+                      },
+                      "title": {
+                        "type": "string",
+                        "maxLength": 512
+                      },
+                      "description": {
+                        "type": "string",
+                        "maxLength": 8192
+                      },
+                      "content": {
+                        "type": "string"
+                      },
+                      "date": {
+                        "type": "string"
+                      },
+                      "link": {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      "image": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "uri",
+                        "maxLength": 2083
+                      },
+                      "authors": {
+                        "type": [
+                          "array",
+                          "null"
+                        ],
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 254
+                            },
+                            "email": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 254
+                            },
+                            "link": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "uri",
+                              "maxLength": 2083
+                            },
+                            "avatar": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "uri",
+                              "maxLength": 2083
+                            }
+                          }
+                        }
+                      },
+                      "contributors": {
+                        "type": [
+                          "array",
+                          "null"
+                        ],
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 254
+                            },
+                            "email": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 254
+                            },
+                            "link": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "uri",
+                              "maxLength": 2083
+                            },
+                            "avatar": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "uri",
+                              "maxLength": 2083
+                            }
+                          }
+                        }
+                      },
+                      "id": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      },
+                      "modifiedAt": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "slug",
+                      "title",
+                      "description",
+                      "content",
+                      "date",
+                      "link",
+                      "id",
+                      "createdAt",
+                      "modifiedAt"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Feed with the provided slug doesn't exist"
+          }
+        },
+        "operationId": "getListOfFeedItems",
+        "tags": [
+          "feed-item"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feedSlug",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "required": true
+          }
+        ],
+        "summary": "Get a list of feed items",
+        "description": "Get a list of all non-archived entries in the feed. The list is never\nbigger than 100 items long."
+      },
+      "post": {
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "slug": {
+                      "type": "string",
+                      "pattern": "^[a-zA-Z0-9_-]+$",
+                      "minLength": 1,
+                      "maxLength": 512
+                    },
+                    "title": {
+                      "type": "string",
+                      "maxLength": 512
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 8192
+                    },
+                    "content": {
+                      "type": "string"
+                    },
+                    "date": {
+                      "type": "string"
+                    },
+                    "link": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "image": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "uri",
+                      "maxLength": 2083
+                    },
+                    "authors": {
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "maxLength": 254
+                          },
+                          "email": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "maxLength": 254
+                          },
+                          "link": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri",
+                            "maxLength": 2083
+                          },
+                          "avatar": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri",
+                            "maxLength": 2083
+                          }
+                        }
+                      }
+                    },
+                    "contributors": {
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "maxLength": 254
+                          },
+                          "email": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "maxLength": 254
+                          },
+                          "link": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri",
+                            "maxLength": 2083
+                          },
+                          "avatar": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri",
+                            "maxLength": 2083
+                          }
+                        }
+                      }
+                    },
+                    "id": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "modifiedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "slug",
+                    "title",
+                    "description",
+                    "content",
+                    "date",
+                    "link",
+                    "id",
+                    "createdAt",
+                    "modifiedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Feed with the provided slug doesn't exist"
+          },
+          "409": {
+            "description": "Feed entry item with the same slug already exists in the feed"
+          }
+        },
+        "operationId": "createFeedItem",
+        "tags": [
+          "feed-item"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feedSlug",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "required": true
+          }
+        ],
+        "summary": "Create a new entry in the feed",
+        "description": "Creates a new entry (post, article, etc.) in a feed. At any given time\na feed contains 100 entries, when you're adding an entry \nbeyond that limit, the oldest entry moves to archive, which contains\n200 additional entries. Any older entry from \narchive is deleted.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "slug": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9_-]+$",
+                    "minLength": 1,
+                    "maxLength": 512
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 512
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 8192
+                  },
+                  "content": {
+                    "type": "string"
+                  },
+                  "date": {
+                    "type": "string"
+                  },
+                  "link": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "image": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uri",
+                    "maxLength": 2083
+                  },
+                  "authors": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "maxLength": 254
+                        },
+                        "email": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "maxLength": 254
+                        },
+                        "link": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "uri",
+                          "maxLength": 2083
+                        },
+                        "avatar": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "uri",
+                          "maxLength": 2083
+                        }
+                      }
+                    }
+                  },
+                  "contributors": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "maxLength": 254
+                        },
+                        "email": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "maxLength": 254
+                        },
+                        "link": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "uri",
+                          "maxLength": 2083
+                        },
+                        "avatar": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "uri",
+                          "maxLength": 2083
+                        }
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "slug",
+                  "title",
+                  "description",
+                  "content",
+                  "date",
+                  "link"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "slug": {
+                        "type": "string",
+                        "pattern": "^[a-zA-Z0-9_-]+$",
+                        "minLength": 1,
+                        "maxLength": 512
+                      },
+                      "title": {
+                        "type": "string",
+                        "maxLength": 512
+                      },
+                      "description": {
+                        "type": "string",
+                        "maxLength": 8192
+                      },
+                      "content": {
+                        "type": "string"
+                      },
+                      "date": {
+                        "type": "string"
+                      },
+                      "link": {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      "image": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "uri",
+                        "maxLength": 2083
+                      },
+                      "authors": {
+                        "type": [
+                          "array",
+                          "null"
+                        ],
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 254
+                            },
+                            "email": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 254
+                            },
+                            "link": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "uri",
+                              "maxLength": 2083
+                            },
+                            "avatar": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "uri",
+                              "maxLength": 2083
+                            }
+                          }
+                        }
+                      },
+                      "contributors": {
+                        "type": [
+                          "array",
+                          "null"
+                        ],
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 254
+                            },
+                            "email": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 254
+                            },
+                            "link": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "uri",
+                              "maxLength": 2083
+                            },
+                            "avatar": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "uri",
+                              "maxLength": 2083
+                            }
+                          }
+                        }
+                      },
+                      "id": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      },
+                      "modifiedAt": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "slug",
+                      "title",
+                      "description",
+                      "content",
+                      "date",
+                      "link",
+                      "id",
+                      "createdAt",
+                      "modifiedAt"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Feed with the provided slug doesn't exist"
+          },
+          "409": {
+            "description": "Duplicated slugs in the payload"
+          },
+          "413": {
+            "description": "More items provided than can be displayed in the feed"
+          }
+        },
+        "operationId": "upsertFeedItems",
+        "tags": [
+          "feed-item"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feedSlug",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "required": true
+          }
+        ],
+        "summary": "Upsert many feed items",
+        "description": "Upsert many feed items. This endpoint allow you to get all the current feed items\nfrom the source and post it to service, the service will figure out whether\nit's a new item, requires modification (based on provided fields) or\nshould be left without changes. Resulting modification status is included\nin the response payload.\n\nEach item will be patched, meaning, if there's an existing item, but you\nprovided only some of its fields, only these fields will be updated. \nStill, you must provide all of the required fields, such as slug, title,\netc., so in case item doesn't exist, it can be created.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "slug": {
+                      "type": "string",
+                      "pattern": "^[a-zA-Z0-9_-]+$",
+                      "minLength": 1,
+                      "maxLength": 512
+                    },
+                    "title": {
+                      "type": "string",
+                      "maxLength": 512
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 8192
+                    },
+                    "content": {
+                      "type": "string"
+                    },
+                    "date": {
+                      "type": "string"
+                    },
+                    "link": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "image": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "uri",
+                      "maxLength": 2083
+                    },
+                    "authors": {
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "maxLength": 254
+                          },
+                          "email": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "maxLength": 254
+                          },
+                          "link": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri",
+                            "maxLength": 2083
+                          },
+                          "avatar": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri",
+                            "maxLength": 2083
+                          }
+                        }
+                      }
+                    },
+                    "contributors": {
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "maxLength": 254
+                          },
+                          "email": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "maxLength": 254
+                          },
+                          "link": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri",
+                            "maxLength": 2083
+                          },
+                          "avatar": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri",
+                            "maxLength": 2083
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "required": [
+                    "slug",
+                    "title",
+                    "description",
+                    "content",
+                    "date",
+                    "link"
+                  ]
+                },
+                "minItems": 1,
+                "maxItems": 100
+              }
+            }
+          }
+        }
+      }
+    },
+    "/feed/{feedSlug}/items/all": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "slug": {
+                        "type": "string",
+                        "pattern": "^[a-zA-Z0-9_-]+$",
+                        "minLength": 1,
+                        "maxLength": 512
+                      },
+                      "title": {
+                        "type": "string",
+                        "maxLength": 512
+                      },
+                      "description": {
+                        "type": "string",
+                        "maxLength": 8192
+                      },
+                      "content": {
+                        "type": "string"
+                      },
+                      "date": {
+                        "type": "string"
+                      },
+                      "link": {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      "image": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "uri",
+                        "maxLength": 2083
+                      },
+                      "authors": {
+                        "type": [
+                          "array",
+                          "null"
+                        ],
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 254
+                            },
+                            "email": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 254
+                            },
+                            "link": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "uri",
+                              "maxLength": 2083
+                            },
+                            "avatar": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "uri",
+                              "maxLength": 2083
+                            }
+                          }
+                        }
+                      },
+                      "contributors": {
+                        "type": [
+                          "array",
+                          "null"
+                        ],
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 254
+                            },
+                            "email": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 254
+                            },
+                            "link": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "uri",
+                              "maxLength": 2083
+                            },
+                            "avatar": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "uri",
+                              "maxLength": 2083
+                            }
+                          }
+                        }
+                      },
+                      "id": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      },
+                      "modifiedAt": {
+                        "type": "string"
+                      },
+                      "archived": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "slug",
+                      "title",
+                      "description",
+                      "content",
+                      "date",
+                      "link",
+                      "id",
+                      "createdAt",
+                      "modifiedAt",
+                      "archived"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Feed with the provided slug doesn't exist"
+          }
+        },
+        "operationId": "getListOfFeedItems",
+        "tags": [
+          "feed-item"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feedSlug",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "required": true
+          }
+        ],
+        "summary": "Get a list of both non-archived and archived feed items",
+        "description": "Get a list of all non-archived and archived entries in the feed. \nThe list is never bigger than \n300 items long."
+      }
+    },
+    "/feed/{feedSlug}/items/{feedItemSlug}": {
+      "patch": {
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "slug": {
+                      "type": "string",
+                      "pattern": "^[a-zA-Z0-9_-]+$",
+                      "minLength": 1,
+                      "maxLength": 512
+                    },
+                    "title": {
+                      "type": "string",
+                      "maxLength": 512
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 8192
+                    },
+                    "content": {
+                      "type": "string"
+                    },
+                    "date": {
+                      "type": "string"
+                    },
+                    "link": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "image": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "uri",
+                      "maxLength": 2083
+                    },
+                    "authors": {
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "maxLength": 254
+                          },
+                          "email": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "maxLength": 254
+                          },
+                          "link": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri",
+                            "maxLength": 2083
+                          },
+                          "avatar": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri",
+                            "maxLength": 2083
+                          }
+                        }
+                      }
+                    },
+                    "contributors": {
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "maxLength": 254
+                          },
+                          "email": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "maxLength": 254
+                          },
+                          "link": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri",
+                            "maxLength": 2083
+                          },
+                          "avatar": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "uri",
+                            "maxLength": 2083
+                          }
+                        }
+                      }
+                    },
+                    "id": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "modifiedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "slug",
+                    "title",
+                    "description",
+                    "content",
+                    "date",
+                    "link",
+                    "id",
+                    "createdAt",
+                    "modifiedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Feed or entry with the provided slug doesn't exist"
+          },
+          "409": {
+            "description": "Updated slug value already exists in the feed"
+          }
+        },
+        "operationId": "updateFeedItem",
+        "tags": [
+          "feed-item"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feedSlug",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "feedItemSlug",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "required": true
+          }
+        ],
+        "summary": "Update a feed entry item",
+        "description": "Update an existing feed entry with new values. \nOnly specified values will be used. For nullable values you must specify\n`null` in the payload, to reset them, not specifying the field in the \npayload at all, or specifying an undefined value will result in \nthe existing value kept.\n\nPlease notice, that updates for authors and contributors must come as a\nfull array, with all old values present. This will be used as is.\nSettings either value as null will also remove the corresponding field.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "slug": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9_-]+$",
+                    "minLength": 1,
+                    "maxLength": 512
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 512
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 8192
+                  },
+                  "content": {
+                    "type": "string"
+                  },
+                  "date": {
+                    "type": "string"
+                  },
+                  "link": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "image": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uri",
+                    "maxLength": 2083
+                  },
+                  "authors": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "maxLength": 254
+                        },
+                        "email": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "maxLength": 254
+                        },
+                        "link": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "uri",
+                          "maxLength": 2083
+                        },
+                        "avatar": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "uri",
+                          "maxLength": 2083
+                        }
+                      }
+                    }
+                  },
+                  "contributors": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "maxLength": 254
+                        },
+                        "email": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "maxLength": 254
+                        },
+                        "link": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "uri",
+                          "maxLength": 2083
+                        },
+                        "avatar": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "uri",
+                          "maxLength": 2083
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Feed or entry with the provided slug doesn't exist"
+          }
+        },
+        "operationId": "deleteFeedItem",
+        "tags": [
+          "feed-item"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feedSlug",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "feedItemSlug",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]+$",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "required": true
+          }
+        ],
+        "summary": "Delete an existing feed entry item",
+        "description": "Deletes an existing feed entry. If archive contains some entries, one of\nthem will be added to the current feed RSS instead of deleted one (but\ntaking the oldest place). You can also use this endpoint to delete \narchived entries as well.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    }
+  }
+}
