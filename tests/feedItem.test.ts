@@ -7,11 +7,11 @@ import { API_KEY_HEADER_NAME, MAX_FEED_ITEMS, MAX_FEED_ITEMS_ARCHIVED } from "..
 import { db, resetDbConnection } from "../src/db/db.ts";
 import { schema } from "../src/db/index.ts";
 import { migrate } from "../src/db/migrate.ts";
-import type { FeedItemModel } from "../src/models/feedItem.ts";
+import type { FeedItemModel, FeedItemUpdateModel } from "../src/models/feedItem.ts";
 import * as feedItemRepository from "../src/repositories/feedItemRepository.ts";
 import * as feedRepository from "../src/repositories/feedRepository.ts";
 
-import { DateMocker, mkTmpDbFile, mockTimers } from "./helpers.ts";
+import { DateMocker, type Jsonify, mkTmpDbFile, mockTimers, responseToPayload } from "./helpers.ts";
 import { makeMockFeedItem, mockFeedPayload } from "./mocks.ts";
 
 before(() => {
@@ -167,7 +167,7 @@ describe("feed items", () => {
 
 		it("returns 400 on missing required fields in item", async () => {
 			await feedRepository.createFeed(mockFeedPayload);
-			// biome-ignore lint/suspicious/noExplicitAny: explicitly messing up with the object
+			// biome-ignore lint/suspicious/noExplicitAny: explicitly messing with the object
 			const payload: any = makeMockFeedItem("test1");
 			delete payload.title;
 			const res = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}/items`, {
@@ -258,6 +258,155 @@ describe("feed items", () => {
 			}
 		});
 	}); // POST /feed/:feedSlug/items/
+
+	describe("PUT /feed/:feedSlug/items/", () => {
+		it("allows to create multiple feedItems in one hit", async () => {
+			await feedRepository.createFeed(mockFeedPayload);
+			const item1 = makeMockFeedItem("test");
+			const item2 = makeMockFeedItem("test2");
+
+			const res = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}/items`, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify([item1, item2]),
+			});
+			const resItems = await res.json();
+			assert.equal(resItems.length, 2);
+			assert.deepEqual(resItems.map(responseToPayload), [item1, item2]);
+			assert.equal(res.status, 200);
+		});
+
+		it("allows old items to be present in payload and doesn't update them if values are the same", async () => {
+			await feedRepository.createFeed(mockFeedPayload);
+			const insertedItem = makeMockFeedItem("test");
+			const modifiedItem = makeMockFeedItem("test2");
+			const woChangeItem = makeMockFeedItem("test3");
+			await feedItemRepository.createFeedItem(mockFeedPayload.slug, modifiedItem);
+			await feedItemRepository.createFeedItem(mockFeedPayload.slug, woChangeItem);
+
+			using dateMocker = new DateMocker();
+			const oldDate = dateMocker.getCurrentTime();
+			const newDate = dateMocker.advanceTime(1000);
+			const res = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}/items`, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify([
+					insertedItem,
+					{ ...modifiedItem, description: "new description" },
+					woChangeItem,
+				] satisfies FeedItemUpdateModel[]),
+			});
+			const items: Jsonify<FeedItemModel[]> = await res.json();
+			assert.equal(items.length, 3);
+			assert.equal(items[0].slug, insertedItem.slug);
+			assert.equal(items[0].createdAt, newDate.toISOString(), "just inserted -- new date");
+			assert.equal(items[0].modifiedAt, newDate.toISOString());
+
+			assert.equal(items[1].slug, modifiedItem.slug);
+			assert.equal(items[1].createdAt, oldDate.toISOString(), "is modified, but creation date should not change");
+			assert.equal(items[1].modifiedAt, newDate.toISOString(), "is modified -- should be new date");
+
+			assert.equal(items[2].slug, woChangeItem.slug);
+			assert.equal(items[2].createdAt, oldDate.toISOString());
+			assert.equal(items[2].modifiedAt, oldDate.toISOString(), "is not modified -- should be old date");
+
+			assert.equal(res.status, 200);
+		});
+
+		it("returns 400 status if feed slug is invalid in path", async () => {
+			await feedRepository.createFeed(mockFeedPayload);
+			const res = await app.request(`/feed/!!!/items`, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify([makeMockFeedItem("test")]),
+			});
+			assert.equal(res.status, 400);
+		});
+
+		it("returns 400 status if payload contains malformed items", async () => {
+			await feedRepository.createFeed(mockFeedPayload);
+			const res = await app.request(`/feed/!!!/items`, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify([{ ...makeMockFeedItem("test"), description: 123 }]),
+			});
+			assert.equal(res.status, 400);
+		});
+
+		it("returns 404 if feed with provided feedSlug doesn't exist", async () => {
+			await feedRepository.createFeed(mockFeedPayload);
+			const res = await app.request(`/feed/bad-slug/items`, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify([makeMockFeedItem("test")]),
+			});
+			assert.equal(res.status, 404);
+		});
+
+		it("returns 409 on duplicated slugs in the payload", async () => {
+			await feedRepository.createFeed(mockFeedPayload);
+			const res = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}/items`, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify([makeMockFeedItem("test"), makeMockFeedItem("test")]),
+			});
+			assert.equal(res.status, 409);
+		});
+
+		it("returns 413 if payload has more items than MAX_FEED_ITEMS", async () => {
+			await feedRepository.createFeed(mockFeedPayload);
+			const res = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}/items`, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(Array.from({ length: MAX_FEED_ITEMS + 1 }, (_, i) => makeMockFeedItem("test" + i))),
+			});
+			assert.equal(res.status, 413);
+		});
+
+		it("returns 401 on unauthorized requests", async () => {
+			await feedRepository.createFeed(mockFeedPayload);
+			const testKey = "test-key";
+			const initialResp = await makeRequest(undefined);
+			assert.equal(initialResp.status, 401);
+			const authorizedResp = await makeRequest(testKey);
+			assert.equal(authorizedResp.status, 200);
+
+			async function makeRequest(key: string | undefined) {
+				return await app.request(
+					`/feed/${encodeURIComponent(mockFeedPayload.slug)}/items`,
+					{
+						method: "PUT",
+						headers: {
+							"Content-Type": "application/json",
+							...(key
+								? {
+										[API_KEY_HEADER_NAME]: key,
+									}
+								: {}),
+						},
+						body: JSON.stringify([makeMockFeedItem("test1")]),
+					},
+					{
+						API_KEY: testKey,
+					} satisfies NodeJS.ProcessEnv
+				);
+			}
+		});
+	}); // PUT /feed/:feedSlug/items
 
 	describe("PATCH /feed/:feedSlug/items/:feedItemSlug", () => {
 		it("updates an existing feed item", async (t) => {

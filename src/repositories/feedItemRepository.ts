@@ -65,6 +65,9 @@ export async function upsertMultipleFeedItems(
 	if (!items.length) {
 		return [];
 	}
+
+	assertSlugUniqueness(items);
+
 	const ts = new Date();
 	const feedId = await getFeedIdBySlug(feedSlug);
 	const existingDbItemsMap = await getDbItemsMap(
@@ -76,7 +79,7 @@ export async function upsertMultipleFeedItems(
 		existingDbItemsMap.has(payloadItem.slug)
 	);
 	const [payloadItemsWithoutChange, payloadItemsToUpdate] = partition(payloadItemsInDb, (payloadItem) => {
-		const dbItem = existingDbItemsMap.get(payloadItem.slug)!;
+		const dbItem = existingDbItemsMap.get(payloadItem.slug) ?? raise(500, "change/no change partition assertion");
 		return isFeedItemsValueEqual(dbItem, payloadItem);
 	});
 
@@ -108,7 +111,9 @@ export async function upsertMultipleFeedItems(
 		return [insertedItems, updatedItems];
 	});
 
-	const dbItemsWithoutChange = payloadItemsWithoutChange.map((item) => existingDbItemsMap.get(item.slug)!);
+	const dbItemsWithoutChange = payloadItemsWithoutChange.map(
+		(item) => existingDbItemsMap.get(item.slug) ?? raise(500, "no change extraction assertion")
+	);
 
 	return [...insertedItems, ...updatedItems, ...dbItemsWithoutChange];
 }
@@ -173,4 +178,13 @@ async function getDbItemsMap(feedId: number, feedItemSlugs: string[]): Promise<M
 		.where(and(eq(schema.feedItem.feedId, feedId), inArray(schema.feedItem.slug, feedItemSlugs)))
 		.all();
 	return new Map(dbItems.map((item) => [item.slug, item]));
+}
+
+function assertSlugUniqueness(items: Array<{ slug: string }>): void {
+	const itemsBySlug = Map.groupBy(items, (i) => i.slug);
+	for (const [slug, group] of itemsBySlug) {
+		if (group.length !== 1) {
+			raise(409, `slug ${slug} is not unique among the provided items and is present ${group.length} times`);
+		}
+	}
 }

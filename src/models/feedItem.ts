@@ -37,11 +37,17 @@ export function isFeedItemsValueEqual(
 	if (source.title !== target.title) return false;
 	if (source.description !== target.description) return false;
 	if (source.content !== target.content) return false;
-	if (source.date !== target.date) return false;
+	if (source.date.getTime() !== target.date.getTime()) return false;
 	if (source.link !== target.link) return false;
 	// optional fields
-	if (source.image !== undefined && source.image !== target.image) return false;
-	if (source.authors !== undefined && !deepEqual(source.authors, target.authors)) return false;
-	if (source.contributors !== undefined && !deepEqual(source.contributors, target.contributors)) return false;
+	if (source.image !== undefined && target.image != null && source.image !== target.image) return false;
+	if (source.authors !== undefined && target.authors != null && !deepEqual(source.authors, target.authors))
+		return false;
+	if (
+		source.contributors !== undefined &&
+		target.contributors != null &&
+		!deepEqual(source.contributors, target.contributors)
+	)
+		return false;
 	return true;
 }

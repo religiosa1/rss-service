@@ -10,6 +10,7 @@ import { apiKeyAuthSecurity } from "../models/apiKeyAuthSecurity.ts";
 import { feedItemSchema, feedItemUpdateSchema } from "../models/feedItem.ts";
 import { slugSchema } from "../models/slug.ts";
 import * as feedItemRepository from "../repositories/feedItemRepository.ts";
+import { raise } from "../utils/errors.ts";
 
 export const feedItemController = new Hono();
 
@@ -179,18 +180,24 @@ feedItemController.put(
 				description: "Successful response",
 				content: {
 					"application/json": {
-						schema: resolver(z.array(feedItemSchema).min(1).max(MAX_FEED_ITEMS)),
+						schema: resolver(z.array(feedItemSchema)),
 					},
 				},
 			},
 			400: {
 				description: "Bad request",
 			},
+			413: {
+				description: "More items provided than can be displayed in the feed",
+			},
 			401: {
 				description: "Unauthorized",
 			},
 			404: {
 				description: "Feed with the provided slug doesn't exist",
+			},
+			409: {
+				description: "Duplicated slugs in the payload",
 			},
 		},
 	}),
@@ -201,7 +208,14 @@ feedItemController.put(
 			feedSlug: slugSchema,
 		})
 	),
-	validator("json", z.array(feedItemUpdateSchema)),
+	validator("json", z.array(feedItemUpdateSchema).min(1).max(MAX_FEED_ITEMS), (result) => {
+		if (!result.success && result.data.length > MAX_FEED_ITEMS) {
+			raise(413, {
+				message: "Too many items provided",
+				cause: result.error,
+			});
+		}
+	}),
 	async (c) => {
 		const { feedSlug } = c.req.valid("param");
 		const payload = c.req.valid("json");
