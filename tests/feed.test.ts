@@ -73,17 +73,44 @@ describe("feed", () => {
 	}); // GET /feed
 
 	describe("GET /feed/:feedSlug", () => {
+		/**
+		 * TODO:
+		 * There's a quirk in jpmonette/feed implementation -- for author to appear it must also have an email field.
+		 * This is addressed by this PR https://github.com/jpmonette/feed/pull/220
+		 *
+		 * We can try playing with alternative formats (atom/json feed), but it kinda defeats the purpose.
+		 */
 		it("returns a rss feed", async (t) => {
 			await feedRepository.createFeed(mockFeedPayload);
 			using dateMocker = new DateMocker();
-			await feedItemRepository.createFeedItem(
-				mockFeedPayload.slug,
-				makeMockFeedItem("test1", dateMocker.advanceTime(1000))
-			);
-			await feedItemRepository.createFeedItem(
-				mockFeedPayload.slug,
-				makeMockFeedItem("test2", dateMocker.advanceTime(1000))
-			);
+			await feedItemRepository.createFeedItem(mockFeedPayload.slug, {
+				...makeMockFeedItem("test1", dateMocker.advanceTime(1000)),
+				authors: [
+					{
+						name: "John Doe",
+						link: "https://example.com/",
+					},
+					{
+						name: "Jane Doe",
+						link: "https://example.com/",
+					},
+				],
+			});
+			await feedItemRepository.createFeedItem(mockFeedPayload.slug, {
+				...makeMockFeedItem("test2", dateMocker.advanceTime(1000)),
+				authors: [
+					{
+						name: "John Doe",
+						link: "https://example.com/",
+					},
+				],
+				contributors: [
+					{
+						name: "Jane Doe",
+						link: "https://example.com/",
+					},
+				],
+			});
 			const res = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}`);
 			assert.equal(res.status, 200);
 			assert.equal(res.headers.get("Content-Type"), "application/rss+xml");
