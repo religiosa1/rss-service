@@ -139,7 +139,7 @@ describe("feed", () => {
 			});
 			const res = await app.request(`/feed/${encodeURIComponent(mockFeedPayload.slug)}`);
 			assert.equal(res.status, 200);
-			assert.equal(res.headers.get("Content-Type"), "application/rss+xml");
+			assert.equal(res.headers.get("Content-Type"), "application/atom+xml; charset=utf-8");
 			t.assert.snapshot(await res.text());
 		});
 

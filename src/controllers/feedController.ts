@@ -101,7 +101,7 @@ feedController.get(
 		const { feedSlug } = c.req.valid("param");
 		const data = await feedService.getFeed(feedSlug);
 		return c.text(data, 200, {
-			"Content-Type": "application/atom+xml",
+			"Content-Type": "application/atom+xml; charset=utf-8",
 		});
 	}
 );
