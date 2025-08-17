@@ -7,16 +7,10 @@ import { slugSchema } from "./slug.ts";
 export const feedUpdateSchema = z.object({
 	slug: slugSchema,
 	title: z.string().max(FEED_TITLE_LENGTH),
-	description: z.string().max(FEED_DESC_LENGTH),
+	description: z.string().max(FEED_DESC_LENGTH).nullish(),
 	image: z.string().url().max(URL_LENGTH).nullish(),
 	favicon: z.string().url().max(URL_LENGTH).nullish(),
-	language: z
-		.string()
-		.min(2)
-		.max(128)
-		.nullable()
-		.optional()
-		.describe("ISO 639 language or IETF language tag of the feed"),
+	language: z.string().min(2).max(128).nullish().describe("ISO 639 language or IETF language tag of the feed"),
 	copyright: z.string().max(512).nullish(),
 	author: authorScheme.nullish(),
 });

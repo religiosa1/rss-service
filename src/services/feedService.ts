@@ -9,7 +9,7 @@ export async function getFeed(feedSlug: string): Promise<string> {
 	const dbFeed = (await readFeed(feedSlug)) ?? raise(404, "Unable to retrieve modified feed from DB");
 	const feed = new Feed({
 		title: dbFeed.title,
-		description: dbFeed.description,
+		description: dbFeed.description ?? undefined,
 		id: dbFeed.slug,
 		link: dbFeed.link,
 		language: dbFeed.language ?? undefined,
@@ -27,8 +27,8 @@ export async function getFeed(feedSlug: string): Promise<string> {
 			title: item.title,
 			id: item.slug,
 			link: item.link,
-			description: item.description,
-			content: item.content,
+			description: item.description ?? undefined,
+			content: item.content ?? undefined,
 			date: item.date,
 			image: item.image ?? undefined,
 			author: item.authors?.map(coerceNullish) ?? undefined,

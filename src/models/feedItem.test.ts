@@ -34,7 +34,13 @@ const mockFeedItem: Required<FeedItemModel> = {
 	],
 };
 
-const optionalFields: ReadonlyArray<keyof FeedItemModel> = ["image", "authors", "contributors"];
+const optionalFields: ReadonlyArray<keyof FeedItemModel> = [
+	"description",
+	"content",
+	"image",
+	"authors",
+	"contributors",
+];
 const allFields = Object.keys(mockFeedItem).filter(
 	(key) => !["id", "createdAt", "modifiedAt"].includes(key) // those fields are omitted from comparison
 ) as ReadonlyArray<keyof FeedItemModel>;

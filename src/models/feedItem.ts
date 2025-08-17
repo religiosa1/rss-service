@@ -7,10 +7,10 @@ import { slugSchema } from "./slug.ts";
 export const feedItemUpdateSchema = z.object({
 	slug: slugSchema,
 	title: z.string().max(FEED_ITEM_TITLE_LENGTH),
-	description: z.string().max(FEED_ITEM_DESC_LENGTH),
-	content: z.string(),
 	date: z.date({ coerce: true }),
 	link: z.string().url(),
+	description: z.string().max(FEED_ITEM_DESC_LENGTH).nullish(),
+	content: z.string().nullish(),
 	image: z.string().url().max(URL_LENGTH).nullish(),
 	authors: z.array(authorScheme).nullish(),
 	contributors: z.array(authorScheme).nullish(),
@@ -19,7 +19,6 @@ export type FeedItemUpdateModel = z.infer<typeof feedItemUpdateSchema>;
 
 export const feedItemSchema = feedItemUpdateSchema.extend({
 	id: z.number().int().positive(),
-	link: z.string().url(),
 	createdAt: z.date(),
 	modifiedAt: z.date(),
 });
@@ -35,19 +34,13 @@ export function isFeedItemsValueEqual(
 ): boolean {
 	if (source.slug !== target.slug) return false;
 	if (source.title !== target.title) return false;
-	if (source.description !== target.description) return false;
-	if (source.content !== target.content) return false;
 	if (source.date.getTime() !== target.date.getTime()) return false;
 	if (source.link !== target.link) return false;
 	// optional fields
-	if (source.image !== undefined && target.image != null && source.image !== target.image) return false;
-	if (source.authors !== undefined && target.authors != null && !deepEqual(source.authors, target.authors))
-		return false;
-	if (
-		source.contributors !== undefined &&
-		target.contributors != null &&
-		!deepEqual(source.contributors, target.contributors)
-	)
-		return false;
+	if (source.content !== undefined && source.content !== (target.content ?? null)) return false;
+	if (source.description !== undefined && source.description !== (target.description ?? null)) return false;
+	if (source.image !== undefined && source.image !== (target.image ?? null)) return false;
+	if (source.authors !== undefined && !deepEqual(source.authors, target.authors ?? null)) return false;
+	if (source.contributors !== undefined && !deepEqual(source.contributors, target.contributors ?? null)) return false;
 	return true;
 }

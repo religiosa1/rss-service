@@ -38,10 +38,10 @@ export function makeMockFeedItem(slug: string, date: Date = new Date(fixedDateSt
 	return {
 		slug,
 		title: "feed item title",
-		description: "feed item description",
 		link: `http://example.com/${encodeURIComponent(slug)}`,
-		content: "blah",
 		date,
+		description: "feed item description",
+		content: "blah",
 	};
 }
 export const mockFeedItemPayload: FeedItemUpdateModel = makeMockFeedItem("testFeedItem");
