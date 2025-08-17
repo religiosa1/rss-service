@@ -55,7 +55,7 @@ feedItemController.get(
 );
 
 feedItemController.get(
-	"/all",
+	"/!all",
 	describeRoute({
 		summary: "Get a list of both non-archived and archived feed items",
 		description: dedent`
@@ -258,6 +258,9 @@ feedItemController.patch(
 			409: {
 				description: "Updated slug value already exists in the feed",
 			},
+			401: {
+				description: "Unauthorized",
+			},
 		},
 	}),
 	apiKeyAuth,
@@ -274,6 +277,50 @@ feedItemController.patch(
 		const payload = c.req.valid("json");
 		const item = await feedItemRepository.updateFeedItem(feedSlug, feedItemSlug, payload);
 		return c.json(item);
+	}
+);
+
+feedItemController.delete(
+	"/!all",
+	describeRoute({
+		summary: "Delete all items in a feed",
+		description: dedent`
+			Deletes all items (both current and archived) in a feed.
+		`,
+		operationId: "deleteAllItemsInFeed",
+		tags,
+		security: apiKeyAuthSecurity,
+		responses: {
+			200: {
+				description: "Successful response",
+				content: {
+					"application/json": {
+						schema: resolver(z.object({ count: z.number().int().nonnegative().describe("amount of items deleted") })),
+					},
+				},
+			},
+			400: {
+				description: "Bad request",
+			},
+			404: {
+				description: "Feed with the provided slug doesn't exist",
+			},
+			401: {
+				description: "Unauthorized",
+			},
+		},
+	}),
+	apiKeyAuth,
+	validator(
+		"param",
+		z.object({
+			feedSlug: slugSchema,
+		})
+	),
+	async (c) => {
+		const { feedSlug } = c.req.valid("param");
+		const count = await feedItemRepository.deleteAllFeedItems(feedSlug);
+		return c.json({ count }, 200);
 	}
 );
 
@@ -299,6 +346,9 @@ feedItemController.delete(
 			},
 			404: {
 				description: "Feed or entry with the provided slug doesn't exist",
+			},
+			401: {
+				description: "Unauthorized",
 			},
 		},
 	}),

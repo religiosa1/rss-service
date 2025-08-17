@@ -131,6 +131,12 @@ export async function deleteFeedItem(feedSlug: string, feedItemSlug: string): Pr
 	}
 }
 
+export async function deleteAllFeedItems(feedSlug: string): Promise<number> {
+	const feedId = await getFeedIdBySlug(feedSlug);
+	const { rowsAffected } = await db.delete(schema.feedItem).where(eq(schema.feedItem.feedId, feedId));
+	return rowsAffected;
+}
+
 /** @see https://github.com/drizzle-team/drizzle-orm/discussions/3271 */
 type Transaction = Parameters<Parameters<(typeof db)["transaction"]>[0]>[0];
 type MaybeTransaction = Transaction | typeof db;

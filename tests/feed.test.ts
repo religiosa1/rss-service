@@ -1,35 +1,15 @@
 import assert from "node:assert/strict";
-import { unlinkSync } from "node:fs";
-import { before, beforeEach, describe, it } from "node:test";
+import { describe, it } from "node:test";
 import { app } from "../src/app.ts";
 import { API_KEY_HEADER_NAME } from "../src/constants.ts";
-import { resetDbConnection } from "../src/db/db.ts";
-import { migrate } from "../src/db/migrate.ts";
 import type { FeedModel, FeedUpdateModel } from "../src/models/feed.ts";
 import * as feedItemRepository from "../src/repositories/feedItemRepository.ts";
 import * as feedRepository from "../src/repositories/feedRepository.ts";
-import { DateMocker, type Jsonify, mkTmpDbFile, mockTimers } from "./helpers.ts";
+import { DateMocker, type Jsonify } from "./helpers.ts";
 import { makeMockFeedItem, mockAuthor, mockFeedPayload, mockFeedResult } from "./mocks.ts";
+import { setupTestEnvironment } from "./setup.ts";
 
-before(() => {
-	mockTimers();
-});
-
-beforeEach(async (t) => {
-	// ensuring each test works with a clean in memory version of db.
-	// Initial idea was to run this in :memory:, but there's a bug with libsql
-	// https://github.com/tursodatabase/libsql-client-ts/issues/140
-	// So we're opting for temporary files instead.
-	const tmpDbFile = mkTmpDbFile();
-	resetDbConnection(tmpDbFile);
-	await migrate();
-
-	if ("after" in t) {
-		t.after(() => {
-			unlinkSync(tmpDbFile);
-		});
-	}
-});
+setupTestEnvironment();
 
 describe("feed", () => {
 	describe("GET /feed", () => {

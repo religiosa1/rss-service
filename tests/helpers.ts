@@ -1,5 +1,3 @@
-import { tmpdir } from "node:os";
-import path from "node:path";
 import { mock } from "node:test";
 import type { FeedItemModel, FeedItemUpdateModel } from "../src/models/feedItem.ts";
 import { fixedDateStr } from "./mocks.ts";
@@ -29,20 +27,6 @@ export class DateMocker {
 	[Symbol.dispose]() {
 		mock.timers.setTime(new Date(fixedDateStr).getTime());
 	}
-}
-
-export function mkTmpDbFile(): string {
-	const randomId = Math.random().toString(36).substring(2, 15);
-	return path.join(tmpdir(), `test-${randomId}.db`);
-}
-
-export function mockTimers() {
-	const fixedDate = new Date(fixedDateStr);
-
-	mock.timers.enable({
-		apis: ["Date"],
-	});
-	mock.timers.setTime(fixedDate.getTime());
 }
 
 /** Helper function, transforming returned response to initial payload, so we can compare them */
