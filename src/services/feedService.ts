@@ -36,5 +36,5 @@ export async function getFeed(feedSlug: string): Promise<string> {
 		});
 	}
 
-	return feed.rss2();
+	return feed.atom1();
 }

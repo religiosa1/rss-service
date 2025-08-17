@@ -37,7 +37,7 @@ All modification endpoints require a API-KEY authentication through
 #### Feed Management (/feed):
 
 - GET /feed - List all feeds
-- GET /feed/:feedSlug - Get RSS XML
+- GET /feed/:feedSlug - Get AtomV1 feed XML
 - POST /feed - Create feed (auth required)
 - PATCH /feed/:feedSlug - Update feed (auth required)
 - DELETE /feed/:feedSlug - Delete feed (auth required)

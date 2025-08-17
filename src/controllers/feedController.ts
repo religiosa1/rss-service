@@ -73,14 +73,14 @@ feedController.post(
 feedController.get(
 	"/:feedSlug",
 	describeRoute({
-		summary: "Get a feed in RSS format",
+		summary: "Get a feed in AtomXML format",
 		operationId: "getFeedRss",
 		tags,
 		responses: {
 			200: {
 				description: "Successful response",
 				content: {
-					"application/rss+xml": {},
+					"application/atom+xml": {},
 				},
 			},
 			400: {
@@ -101,7 +101,7 @@ feedController.get(
 		const { feedSlug } = c.req.valid("param");
 		const data = await feedService.getFeed(feedSlug);
 		return c.text(data, 200, {
-			"Content-Type": " application/rss+xml",
+			"Content-Type": "application/atom+xml",
 		});
 	}
 );
