@@ -16,7 +16,7 @@ export function raise(
 		typeof optionsOrMessage === "string"
 			? {
 					message: optionsOrMessage,
-			  }
+				}
 			: optionsOrMessage;
 	throw new HTTPException(statusCode, options);
 }

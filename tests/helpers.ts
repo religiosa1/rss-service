@@ -1,7 +1,7 @@
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { mock } from "node:test";
-
+import type { FeedItemModel, FeedItemUpdateModel } from "../src/models/feedItem.ts";
 import { fixedDateStr } from "./mocks.ts";
 
 /** Transform Date objects in payload to string -- to align with JSON response */
@@ -43,4 +43,16 @@ export function mockTimers() {
 		apis: ["Date"],
 	});
 	mock.timers.setTime(fixedDate.getTime());
+}
+
+/** Helper function, transforming returned response to initial payload, so we can compare them */
+export function responseToPayload(item: Jsonify<FeedItemModel> | FeedItemModel): FeedItemUpdateModel {
+	return {
+		slug: item.slug,
+		title: item.title,
+		description: item.description,
+		link: item.link,
+		content: item.content,
+		date: new Date(item.date),
+	};
 }

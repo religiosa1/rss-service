@@ -1,13 +1,7 @@
 {
 	// Visit https://aka.ms/tsconfig to read more about this file
-	"include": [
-		"**/*.ts",
-		"**/*.tsx"
-	],
-	"exclude": [
-		"node_modules",
-		"dist"
-	],
+	"include": ["**/*.ts", "**/*.tsx"],
+	"exclude": ["node_modules", "dist"],
 	"compilerOptions": {
 		// File Layout
 		// "rootDir": "./src",
@@ -38,7 +32,8 @@
 		"noImplicitOverride": true,
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
-		"noFallthroughCasesInSwitch": true,
+		// handled by the linter instead, so we can disable it for explicit fallthrough
+		"noFallthroughCasesInSwitch": false,
 		"noPropertyAccessFromIndexSignature": true,
 
 		// Recommended Options

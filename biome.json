@@ -1,7 +1,10 @@
 {
 	"$schema": "https://biomejs.dev/schemas/2.2.0/schema.json",
 	"vcs": { "enabled": false, "clientKind": "git", "useIgnoreFile": false },
-	"files": { "ignoreUnknown": false },
+	"files": {
+		"ignoreUnknown": false,
+		"includes": ["**", "!drizzle"]
+	},
 	"formatter": {
 		"enabled": true,
 		"formatWithErrors": false,
@@ -15,14 +18,14 @@
 		"expand": "auto",
 		"useEditorconfig": true
 	},
-	"linter": { 
-		"enabled": true, 
+	"linter": {
+		"enabled": true,
 		"rules": {
 			"style": {
 				"useTemplate": "off"
 			},
 			"recommended": true
-		} 
+		}
 	},
 	"javascript": {
 		"formatter": {
