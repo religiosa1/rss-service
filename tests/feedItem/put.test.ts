@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import { app } from "../../src/app.ts";
 import { API_KEY_HEADER_NAME, MAX_FEED_ITEMS } from "../../src/constants.ts";
-import type { FeedItemModel, FeedItemUpdateModel } from "../../src/models/feedItem.ts";
+import type { FeedItemUpdateModel, MultiUpsertModel } from "../../src/models/feedItem.ts";
 import * as feedItemRepository from "../../src/repositories/feedItemRepository.ts";
 import * as feedRepository from "../../src/repositories/feedRepository.ts";
 import { DateMocker, type Jsonify, responseToPayload } from "../helpers.ts";
@@ -23,9 +23,8 @@ describe("PUT /feed/:feedSlug/items/", () => {
 			},
 			body: JSON.stringify([item1, item2]),
 		});
-		const resItems = await res.json();
-		t.assert.equal(resItems.length, 2);
-		t.assert.deepEqual(resItems.map(responseToPayload), [item1, item2]);
+		const resPayload = await res.json();
+		t.assert.deepEqual(resPayload.inserted.map(responseToPayload), [item1, item2]);
 		t.assert.equal(res.status, 200);
 	});
 
@@ -51,19 +50,29 @@ describe("PUT /feed/:feedSlug/items/", () => {
 				woChangeItem,
 			] satisfies FeedItemUpdateModel[]),
 		});
-		const items: Jsonify<FeedItemModel[]> = await res.json();
-		t.assert.equal(items.length, 3);
-		t.assert.equal(items[0].slug, insertedItem.slug);
-		t.assert.equal(items[0].createdAt, newDate.toISOString(), "just inserted -- new date");
-		t.assert.equal(items[0].modifiedAt, newDate.toISOString());
+		const respPayload: Jsonify<MultiUpsertModel> = await res.json();
+		t.assert.equal(respPayload.inserted.length, 1);
+		t.assert.equal(respPayload.inserted[0].slug, insertedItem.slug);
+		t.assert.equal(respPayload.inserted[0].createdAt, newDate.toISOString(), "just inserted -- new date");
+		t.assert.equal(respPayload.inserted[0].modifiedAt, newDate.toISOString());
 
-		t.assert.equal(items[1].slug, modifiedItem.slug);
-		t.assert.equal(items[1].createdAt, oldDate.toISOString(), "is modified, but creation date should not change");
-		t.assert.equal(items[1].modifiedAt, newDate.toISOString(), "is modified -- should be new date");
+		t.assert.equal(respPayload.updated.length, 1);
+		t.assert.equal(respPayload.updated[0].slug, modifiedItem.slug);
+		t.assert.equal(
+			respPayload.updated[0].createdAt,
+			oldDate.toISOString(),
+			"is modified, but creation date should not change"
+		);
+		t.assert.equal(respPayload.updated[0].modifiedAt, newDate.toISOString(), "is modified -- should be new date");
 
-		t.assert.equal(items[2].slug, woChangeItem.slug);
-		t.assert.equal(items[2].createdAt, oldDate.toISOString());
-		t.assert.equal(items[2].modifiedAt, oldDate.toISOString(), "is not modified -- should be old date");
+		t.assert.equal(respPayload.withoutChange.length, 1);
+		t.assert.equal(respPayload.withoutChange[0].slug, woChangeItem.slug);
+		t.assert.equal(respPayload.withoutChange[0].createdAt, oldDate.toISOString());
+		t.assert.equal(
+			respPayload.withoutChange[0].modifiedAt,
+			oldDate.toISOString(),
+			"is not modified -- should be old date"
+		);
 
 		t.assert.equal(res.status, 200);
 	});
@@ -83,10 +92,11 @@ describe("PUT /feed/:feedSlug/items/", () => {
 			},
 			body: JSON.stringify([item]),
 		});
-		const items: Jsonify<FeedItemModel[]> = await res.json();
-		t.assert.equal(items[0].slug, item.slug);
-		t.assert.equal(items[0].createdAt, oldDate.toISOString());
-		t.assert.equal(items[0].modifiedAt, oldDate.toISOString(), "is not modified -- should be old date");
+		const items: Jsonify<MultiUpsertModel> = await res.json();
+		t.assert.equal(items.withoutChange.length, 1);
+		t.assert.equal(items.withoutChange[0].slug, item.slug);
+		t.assert.equal(items.withoutChange[0].createdAt, oldDate.toISOString());
+		t.assert.equal(items.withoutChange[0].modifiedAt, oldDate.toISOString(), "is not modified -- should be old date");
 
 		t.assert.equal(res.status, 200);
 	});

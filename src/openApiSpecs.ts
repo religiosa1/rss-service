@@ -19,6 +19,9 @@ export const openApiSpecs: OpenApiSpecsOptions = {
 					name: API_KEY_HEADER_NAME,
 				},
 			},
+			headers: {
+				"X-Request-Id": { schema: { type: "string" } },
+			},
 		},
 		servers: [{ url: `http://localhost:${port}`, description: "Local Server" }],
 	},

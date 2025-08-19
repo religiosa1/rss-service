@@ -1,6 +1,10 @@
 {
 	"$schema": "https://biomejs.dev/schemas/2.2.0/schema.json",
-	"vcs": { "enabled": false, "clientKind": "git", "useIgnoreFile": false },
+	"vcs": {
+		"enabled": false,
+		"clientKind": "git",
+		"useIgnoreFile": false
+	},
 	"files": {
 		"ignoreUnknown": false,
 		"includes": ["**", "!drizzle"]
@@ -40,10 +44,22 @@
 			"bracketSpacing": true
 		}
 	},
-	"html": { "formatter": { "selfCloseVoidElements": "always" } },
-	"overrides": [{ "includes": ["*.ts", "*.tsx"] }],
+	"html": {
+		"formatter": {
+			"selfCloseVoidElements": "always"
+		}
+	},
+	"overrides": [
+		{
+			"includes": ["*.ts", "*.tsx"]
+		}
+	],
 	"assist": {
 		"enabled": true,
-		"actions": { "source": { "organizeImports": "on" } }
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
 	}
 }

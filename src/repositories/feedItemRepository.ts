@@ -1,7 +1,12 @@
 import { and, desc, eq, inArray, notInArray } from "drizzle-orm";
 import { MAX_FEED_ITEMS, MAX_FEED_ITEMS_ARCHIVED } from "../constants.ts";
 import { db, schema } from "../db/index.ts";
-import { type FeedItemModel, type FeedItemUpdateModel, isFeedItemsValueEqual } from "../models/feedItem.ts";
+import {
+	type FeedItemModel,
+	type FeedItemUpdateModel,
+	isFeedItemsValueEqual,
+	type MultiUpsertModel,
+} from "../models/feedItem.ts";
 import { mapDbError, raise } from "../utils/errors.ts";
 import { partition } from "../utils/partition.ts";
 
@@ -60,10 +65,14 @@ export async function updateFeedItem(
 export async function upsertMultipleFeedItems(
 	feedSlug: string,
 	items: FeedItemUpdateModel[]
-): Promise<FeedItemModel[]> {
+): Promise<MultiUpsertModel> {
 	items = items.slice(0, MAX_FEED_ITEMS);
 	if (!items.length) {
-		return [];
+		return {
+			inserted: [],
+			updated: [],
+			withoutChange: [],
+		};
 	}
 
 	assertSlugUniqueness(items);
@@ -83,7 +92,7 @@ export async function upsertMultipleFeedItems(
 		return isFeedItemsValueEqual(dbItem, payloadItem);
 	});
 
-	const [insertedItems, updatedItems] = await db.transaction(async (tx) => {
+	const [inserted, updated] = await db.transaction(async (tx) => {
 		const insertedItems = !payloadItemsToInsert.length
 			? []
 			: await tx
@@ -113,11 +122,11 @@ export async function upsertMultipleFeedItems(
 		return [insertedItems, updatedItems];
 	});
 
-	const dbItemsWithoutChange = payloadItemsWithoutChange.map(
+	const withoutChange = payloadItemsWithoutChange.map(
 		(item) => existingDbItemsMap.get(item.slug) ?? raise(500, "no change extraction assertion")
 	);
 
-	return [...insertedItems, ...updatedItems, ...dbItemsWithoutChange];
+	return { inserted, updated, withoutChange };
 }
 
 export async function deleteFeedItem(feedSlug: string, feedItemSlug: string): Promise<void> {

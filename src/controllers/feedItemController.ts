@@ -1,18 +1,20 @@
 import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
-import { resolver, validator } from "hono-openapi/zod";
+import { resolver } from "hono-openapi/zod";
 import { dedent } from "ts-dedent";
 import z from "zod";
-
+import type { AppEnv } from "../app.ts";
 import { MAX_FEED_ITEMS, MAX_FEED_ITEMS_ARCHIVED } from "../constants.ts";
 import { apiKeyAuth } from "../middleware/apiKeyAuth.ts";
+import { validator } from "../middleware/validator.ts";
 import { apiKeyAuthSecurity } from "../models/apiKeyAuthSecurity.ts";
-import { feedItemSchema, feedItemUpdateSchema } from "../models/feedItem.ts";
+import { errorResponseOpenApiSchema, validationErrorResponseOpenApiSchema } from "../models/errorResponse.ts";
+import { feedItemSchema, feedItemUpdateSchema, type MultiUpsertModel, multiUpsertSchema } from "../models/feedItem.ts";
 import { slugSchema } from "../models/slug.ts";
 import * as feedItemRepository from "../repositories/feedItemRepository.ts";
 import { raise } from "../utils/errors.ts";
 
-export const feedItemController = new Hono();
+export const feedItemController = new Hono<AppEnv>();
 
 const tags = ["feed-item"];
 
@@ -35,9 +37,11 @@ feedItemController.get(
 			},
 			400: {
 				description: "Bad request",
+				content: validationErrorResponseOpenApiSchema,
 			},
 			404: {
 				description: "Feed with the provided slug doesn't exist",
+				content: errorResponseOpenApiSchema,
 			},
 		},
 	}),
@@ -82,9 +86,11 @@ feedItemController.get(
 			},
 			400: {
 				description: "Bad request",
+				content: validationErrorResponseOpenApiSchema,
 			},
 			404: {
 				description: "Feed with the provided slug doesn't exist",
+				content: errorResponseOpenApiSchema,
 			},
 		},
 	}),
@@ -128,15 +134,19 @@ feedItemController.post(
 			},
 			400: {
 				description: "Bad request",
+				content: validationErrorResponseOpenApiSchema,
 			},
 			401: {
 				description: "Unauthorized",
+				content: errorResponseOpenApiSchema,
 			},
 			404: {
 				description: "Feed with the provided slug doesn't exist",
+				content: errorResponseOpenApiSchema,
 			},
 			409: {
 				description: "Feed entry item with the same slug already exists in the feed",
+				content: errorResponseOpenApiSchema,
 			},
 		},
 	}),
@@ -152,6 +162,7 @@ feedItemController.post(
 		const { feedSlug } = c.req.valid("param");
 		const payload = c.req.valid("json");
 		const item = await feedItemRepository.createFeedItem(feedSlug, payload);
+		c.var.logger.info({ feedSlug, payload }, `Created feedItem ${feedSlug}/${payload.slug}`);
 		return c.json(item, 201);
 	}
 );
@@ -180,24 +191,29 @@ feedItemController.put(
 				description: "Successful response",
 				content: {
 					"application/json": {
-						schema: resolver(z.array(feedItemSchema)),
+						schema: resolver(multiUpsertSchema),
 					},
 				},
 			},
 			400: {
 				description: "Bad request",
+				content: validationErrorResponseOpenApiSchema,
 			},
 			413: {
 				description: "More items provided than can be displayed in the feed",
+				content: errorResponseOpenApiSchema,
 			},
 			401: {
 				description: "Unauthorized",
+				content: errorResponseOpenApiSchema,
 			},
 			404: {
 				description: "Feed with the provided slug doesn't exist",
+				content: errorResponseOpenApiSchema,
 			},
 			409: {
 				description: "Duplicated slugs in the payload",
+				content: errorResponseOpenApiSchema,
 			},
 		},
 	}),
@@ -219,8 +235,19 @@ feedItemController.put(
 	async (c) => {
 		const { feedSlug } = c.req.valid("param");
 		const payload = c.req.valid("json");
-		const item = await feedItemRepository.upsertMultipleFeedItems(feedSlug, payload);
-		return c.json(item, 200);
+		const upsertResult = await feedItemRepository.upsertMultipleFeedItems(feedSlug, payload);
+
+		const upsertLogResult = Object.fromEntries(
+			Object.entries(upsertResult).map(([key, val]) => [key, val.map((i) => i.slug)])
+		) as { [K in keyof MultiUpsertModel]: string[] };
+		c.var.logger.info(
+			upsertLogResult,
+			"Upsert result: inserted %d, updated %d, withoutChange %d",
+			upsertLogResult.inserted.length,
+			upsertLogResult.updated.length,
+			upsertLogResult.withoutChange.length
+		);
+		return c.json(upsertResult, 200);
 	}
 );
 
@@ -251,15 +278,19 @@ feedItemController.patch(
 			},
 			400: {
 				description: "Bad request",
+				content: validationErrorResponseOpenApiSchema,
 			},
 			404: {
 				description: "Feed or entry with the provided slug doesn't exist",
+				content: errorResponseOpenApiSchema,
 			},
 			409: {
 				description: "Updated slug value already exists in the feed",
+				content: errorResponseOpenApiSchema,
 			},
 			401: {
 				description: "Unauthorized",
+				content: errorResponseOpenApiSchema,
 			},
 		},
 	}),
@@ -276,6 +307,10 @@ feedItemController.patch(
 		const { feedSlug, feedItemSlug } = c.req.valid("param");
 		const payload = c.req.valid("json");
 		const item = await feedItemRepository.updateFeedItem(feedSlug, feedItemSlug, payload);
+		c.var.logger.info(
+			{ feedSlug, feedItemSlug, payload },
+			`Patched feedItem ${feedSlug}/${feedItemSlug}` + payload.slug ? ` -> ${payload.slug}` : ""
+		);
 		return c.json(item);
 	}
 );
@@ -301,12 +336,15 @@ feedItemController.delete(
 			},
 			400: {
 				description: "Bad request",
+				content: validationErrorResponseOpenApiSchema,
 			},
 			404: {
 				description: "Feed with the provided slug doesn't exist",
+				content: errorResponseOpenApiSchema,
 			},
 			401: {
 				description: "Unauthorized",
+				content: errorResponseOpenApiSchema,
 			},
 		},
 	}),
@@ -320,6 +358,7 @@ feedItemController.delete(
 	async (c) => {
 		const { feedSlug } = c.req.valid("param");
 		const count = await feedItemRepository.deleteAllFeedItems(feedSlug);
+		c.var.logger.info({ feedSlug, count }, `Deleted all ${count} feedItems from ${feedSlug}`);
 		return c.json({ count }, 200);
 	}
 );
@@ -343,12 +382,15 @@ feedItemController.delete(
 			},
 			400: {
 				description: "Bad request",
+				content: validationErrorResponseOpenApiSchema,
 			},
 			404: {
 				description: "Feed or entry with the provided slug doesn't exist",
+				content: errorResponseOpenApiSchema,
 			},
 			401: {
 				description: "Unauthorized",
+				content: errorResponseOpenApiSchema,
 			},
 		},
 	}),
@@ -363,6 +405,7 @@ feedItemController.delete(
 	async (c) => {
 		const { feedSlug, feedItemSlug } = c.req.valid("param");
 		await feedItemRepository.deleteFeedItem(feedSlug, feedItemSlug);
+		c.var.logger.info({ feedSlug, feedItemSlug }, `Deleted feedItem ${feedSlug}/${feedItemSlug}`);
 		return c.body(null, 204);
 	}
 );

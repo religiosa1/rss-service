@@ -4,17 +4,43 @@
  */
 
 import { Hono } from "hono";
-import { logger } from "hono/logger";
+import { HTTPException } from "hono/http-exception";
+import { requestId } from "hono/request-id";
+import { routePath } from "hono/route";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { describeRoute } from "hono-openapi";
-
+import { type PinoLogger, pinoLogger } from "hono-pino";
 import { feedController } from "./controllers/feedController.ts";
 import { feedItemController } from "./controllers/feedItemController.ts";
+import { logger } from "./logger.ts";
+import type { ErrorResponseModel } from "./models/errorResponse.ts";
 
-export const app = new Hono();
+export type AppEnv = {
+	Variables: {
+		logger: PinoLogger;
+		requestId: string;
+	};
+};
 
-if (process.env.NODE_ENV !== "test") {
-	app.use(logger());
-}
+export const app = new Hono<AppEnv>()
+	.use(requestId()) //
+	.use(
+		pinoLogger({
+			pino: logger,
+		})
+	)
+	.onError((err, c) => {
+		logger.error({ err }, `Error occurred in ${routePath(c)}`);
+		const status: ContentfulStatusCode = err instanceof HTTPException ? err.status : 500;
+		return c.json(
+			{
+				success: false,
+				status,
+				message: String(err),
+			} satisfies ErrorResponseModel,
+			status
+		);
+	});
 
 if (!process.env.DISABLE_OPEN_API) {
 	const { openAPISpecs } = await import("hono-openapi");

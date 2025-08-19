@@ -9,12 +9,14 @@ import type { serve } from "@hono/node-server";
 import { app } from "./app.ts";
 import { migrate } from "./db/index.ts";
 import { port } from "./globalContext.ts";
+import { logger } from "./logger.ts";
 
 if (!process.env.DB_SKIP_MIGRATIONS) {
-	console.log("Running migrations...");
+	logger.info("Running migrations...");
 	const ts = performance.now();
 	await migrate();
-	console.log(`migrations done in ${(performance.now() - ts).toPrecision(3)}ms`);
+	const duration = performance.now() - ts;
+	logger.info({ duration }, `migrations done in ${(duration).toPrecision(3)}ms`);
 }
 
 export default {

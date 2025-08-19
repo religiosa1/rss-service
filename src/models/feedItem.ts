@@ -24,6 +24,13 @@ export const feedItemSchema = feedItemUpdateSchema.extend({
 });
 export type FeedItemModel = z.infer<typeof feedItemSchema>;
 
+export const multiUpsertSchema = z.object({
+	inserted: z.array(feedItemSchema),
+	updated: z.array(feedItemSchema),
+	withoutChange: z.array(feedItemSchema),
+});
+export type MultiUpsertModel = z.infer<typeof multiUpsertSchema>;
+
 /**
  * Check if two feed items are deep equal, considering optionality of some of the fields and not
  * considering meta info, such as createdAt and modifiedAt.
