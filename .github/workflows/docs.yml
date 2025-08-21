@@ -32,6 +32,48 @@ jobs:
         run: |
           mkdir -p docs
           npm run --silent generate-openapi-specs > docs/openapi.json
+          cat << 'EOF' > docs/index.html
+          <!doctype html>
+          <html>
+            <head>
+              <title>Scalar API Reference</title>
+              <meta charset="utf-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+              <style type="text/css">
+                .dark-mode {
+                  color-scheme: dark;
+                  --scalar-color-1: rgba(255, 255, 245, .86);
+                  --scalar-color-2: rgba(255, 255, 245, .6);
+                  --scalar-color-3: rgba(255, 255, 245, .38);
+                  --scalar-color-accent: #e36002;
+                  --scalar-background-1: #1e1e20;
+                  --scalar-background-2: #2a2a2a;
+                  --scalar-background-3: #505053;
+                  --scalar-border-color: rgba(255, 255, 255, 0.1);
+                }
+                .dark-mode .sidebar {
+                  --scalar-sidebar-background-1: #161618;
+                  --scalar-sidebar-item-hover-color: var(--scalar-color-accent);
+                  --scalar-sidebar-color-active: var(--scalar-color-accent);
+                }
+              </style>
+            </head>
+            <body>
+              <div id="app"></div>
+              <script
+                data-url="openapi.json"
+                src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"
+              ></script>
+              <script type="text/javascript">
+                Scalar.createApiReference('#app', {
+                  "_integration": "hono",
+                  "url": "./openapi.json",
+                  "hideModels": true
+                })
+              </script>
+            </body>
+          </html>
+          EOF
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
