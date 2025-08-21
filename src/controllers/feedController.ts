@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
 import { resolver } from "hono-openapi/zod";
 import { dedent } from "ts-dedent";
+import { match } from "ts-pattern";
 import z from "zod";
 import type { AppEnv } from "../app.ts";
 import { apiKeyAuth } from "../middleware/apiKeyAuth.ts";
@@ -80,7 +81,7 @@ feedController.post(
 feedController.get(
 	"/:feedSlug",
 	describeRoute({
-		summary: "Get a feed in AtomXML format",
+		summary: "Get a feed in one of the feed formats",
 		operationId: "getFeedRss",
 		tags,
 		responses: {
@@ -88,6 +89,8 @@ feedController.get(
 				description: "Successful response",
 				content: {
 					"application/atom+xml": {},
+					"application/rss+xml": {},
+					"application/feed+json": {},
 				},
 			},
 			400: {
@@ -106,12 +109,26 @@ feedController.get(
 			feedSlug: slugSchema,
 		})
 	),
+	validator(
+		"query",
+		z.object({
+			type: z.enum(["atom", "rss", "json"]).default("atom").describe("Feed output format"),
+		})
+	),
 	async (c) => {
 		const { feedSlug } = c.req.valid("param");
-		const data = await feedService.getFeed(feedSlug);
+		const { type } = c.req.valid("query");
+		const data = await feedService.getFeed(feedSlug, type);
+
+		const contentType: string =
+			match(type)
+				.with("json", () => "application/feed+json")
+				.with("rss", () => "application/rss+xml")
+				.otherwise(() => "application/atom+xml") + //
+			"; charset=utf-8";
 
 		return c.text(data, 200, {
-			"Content-Type": "application/atom+xml; charset=utf-8",
+			"Content-Type": contentType,
 		});
 	}
 );

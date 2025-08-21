@@ -10,12 +10,19 @@ archived ones (keeps 100 non-archived and 200 archived entries per feed).
 Uses [feed](https://github.com/jpmonette/feed) library for the actual
 rss generation.
 
+Provides optional OpenAPI/Scalar docs, Prometheus metrics, modifications and 
+error logging through pino, as well as informative validation error responses,
+so it's easier for your to setup your scrappers/clients.
+
 The initial reason behind it -- to provide feeds for some websites, scraping
 them with some automation flow (n8n, python scripts, etc.) and posting the
 result to this service, so I can access the feed through a reader, without
-manually checking their websites.
+manually checking their websites. 
 
-Requires node v22.11 or higher, as it uses direct typescript execution.
+In my particular use-case, I'm consuming service output with 
+[miniflux](https://miniflux.app/) to sync read status across multiple devices.
+
+Requires node v22.18 or higher, as it uses direct typescript execution.
 
 ## The intended usage flow:
 
@@ -61,6 +68,8 @@ All modification endpoints require a API-KEY authentication through
 
 ## Installation and launch.
 
+<!--
+TODO: uncomment that, once the docker image is pushed to the ghcr.io by the pipeline
 ### Running with docker
 
 The easiest way to launch the service is to run the provided docker image:
@@ -81,7 +90,7 @@ You can build your own image using the provided Dockerfile:
 
 ```sh
 docker build -t rss-service .
-```
+``` -->
 
 ### For local development and direct node deployment:
 

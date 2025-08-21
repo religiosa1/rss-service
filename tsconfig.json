@@ -14,6 +14,9 @@
 		"target": "esnext",
 		"types": ["node"],
 
+		// Currently (08.2025) node only allows erasable syntax (e.g. no enums)
+		"erasableSyntaxOnly": true,
+
 		// Other Outputs
 		"sourceMap": true,
 		"declaration": true,

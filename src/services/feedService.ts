@@ -5,7 +5,7 @@ import { readFeed } from "../repositories/feedRepository.ts";
 import { coerceNullish } from "../utils/coerceNullish.ts";
 import { raise } from "../utils/errors.ts";
 
-export async function getFeed(feedSlug: string): Promise<string> {
+export async function getFeed(feedSlug: string, type: "atom" | "rss" | "json" = "atom"): Promise<string> {
 	const dbFeed = (await readFeed(feedSlug)) ?? raise(404, "Unable to retrieve modified feed from DB");
 	const feed = new Feed({
 		title: dbFeed.title,
@@ -36,5 +36,12 @@ export async function getFeed(feedSlug: string): Promise<string> {
 		});
 	}
 
-	return feed.atom1();
+	switch (type) {
+		case "json":
+			return feed.json1();
+		case "rss":
+			return feed.rss2();
+		default:
+			return feed.atom1();
+	}
 }

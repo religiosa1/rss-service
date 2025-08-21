@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import test, { describe, it } from "node:test";
 import { app } from "../src/app.ts";
 import { API_KEY_HEADER_NAME } from "../src/constants.ts";
 import type { FeedModel, FeedUpdateModel } from "../src/models/feed.ts";
@@ -141,6 +141,33 @@ describe("feed", () => {
 			assert.equal(res.status, 200);
 			assert.equal(res.headers.get("Content-Type"), "application/atom+xml; charset=utf-8");
 			t.assert.snapshot(await res.text());
+		});
+
+		it("returns different type of feed based on the feed param", async () => {
+			const tests = [
+				["json", "application/feed+json; charset=utf-8"],
+				["rss", "application/rss+xml; charset=utf-8"],
+				["atom", "application/atom+xml; charset=utf-8"],
+				[undefined, "application/atom+xml; charset=utf-8"],
+			] as const;
+
+			for (const [type, want] of tests) {
+				test(`${type} -> ${want}`, async (t) => {
+					await feedRepository.createFeed(mockFeedPayload);
+					await feedItemRepository.createFeedItem(mockFeedPayload.slug, makeMockFeedItem("test1"));
+					const params = new URLSearchParams();
+					if (type) {
+						params.set("type", type);
+					}
+					const searchParamsString = params.toString();
+					const res = await app.request(
+						[`/feed/${encodeURIComponent(mockFeedPayload.slug)}`, searchParamsString].filter(Boolean).join("?")
+					);
+					t.assert.equal(res.status, 200);
+					const contType = res.headers.get("Content-Type");
+					t.assert.equal(contType, want);
+				});
+			}
 		});
 
 		it("returns 400 on invalid feedSlug param", async () => {
@@ -388,7 +415,6 @@ describe("feed", () => {
 				},
 				body: JSON.stringify({ description: "blah" } satisfies Partial<FeedUpdateModel>),
 			});
-			console.log("resp body", await resp.text());
 			assert.equal(resp.status, 404);
 		});
 
