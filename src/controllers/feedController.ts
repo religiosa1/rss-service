@@ -187,7 +187,7 @@ feedController.patch(
 		const { feedSlug } = c.req.valid("param");
 		const payload = c.req.valid("json");
 		const item = await feedRepository.updateFeed(feedSlug, payload);
-		c.var.logger.info({ feedSlug, payload }, `Patched feed ${feedSlug}` + payload.slug ? ` -> ${payload.slug}` : "");
+		c.var.logger.info({ feedSlug, payload }, `Patched feed ${feedSlug}${payload.slug ? ` -> ${payload.slug}` : ""}`);
 		return c.json(item);
 	}
 );

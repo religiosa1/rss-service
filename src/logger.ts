@@ -1,4 +1,5 @@
 import pino from "pino";
+import packageJson from "../package.json" with { type: "json" };
 
 export const logger = setupLogger();
 
@@ -21,10 +22,31 @@ function setupLogger(nodeEnv = process.env.NODE_ENV): pino.Logger {
 }
 
 function setupProdLogger(): pino.Logger {
-	// TODO otel support
+	const { OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_LOGS_ENDPOINT } = process.env;
+	const isOtelLogging = OTEL_EXPORTER_OTLP_ENDPOINT || OTEL_EXPORTER_OTLP_LOGS_ENDPOINT;
+	const transport = isOtelLogging
+		? {
+				targets: [
+					{
+						target: "pino-opentelemetry-transport",
+						options: {
+							resourceAttributes: {
+								"service.name": packageJson.name,
+								"service.version": packageJson.version,
+							},
+						},
+					},
+					{
+						target: "pino/file",
+						options: { destination: 1 }, // stdout
+					},
+				],
+			}
+		: undefined;
 	return pino({
 		base: null,
 		level: "info",
+		transport,
 		timestamp: pino.stdTimeFunctions.epochTime,
 	});
 }

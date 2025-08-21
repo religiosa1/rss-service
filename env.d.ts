@@ -30,6 +30,22 @@ declare global {
 			 * launches.
 			 */
 			NODE_ENV?: string;
+
+			// OpenTelemetry logging; consumed by pino-opentelemetry-transport
+
+			/**
+			 * OTLP collector endpoint. If set, logging information will be
+			 * supported to the provided endpoint (otherwise logs to stdout)
+			 */
+			OTEL_EXPORTER_OTLP_ENDPOINT;
+			/** Logging-specific override OTLP endpoint */
+			OTEL_EXPORTER_OTLP_LOGS_ENDPOINT?: string;
+
+			/** OTEL logging format, possible values:
+			 * http/protobuf, grpc, http or console */
+			OTEL_EXPORTER_OTLP_PROTOCOL?: string;
+			/** Logging-specific override for OTLP_PROTOCOL */
+			OTEL_EXPORTER_OTLP_LOGS_PROTOCOL?: string;
 		}
 	}
 }

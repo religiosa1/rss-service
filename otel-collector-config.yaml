@@ -1,0 +1,28 @@
+# Test OTEL collector for logging verification. Can be run with:
+# docker run --volume=$(pwd)/otel-collector-config.yaml:/etc/otel-collector-config.yaml:rw --volume=$(pwd)/test-logs:/etc/test-logs:rw -p 4318:4318 -p 4317:4317 -d otel/opentelemetry-collector-contrib:latest --config=/etc/otel-collector-config.yaml
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+exporters:
+  file:
+    path: ./etc/test-logs/otlp-logs.log
+    flush_interval: 1
+
+  debug:
+    verbosity: basic
+  
+processors:
+  batch:
+
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: []
+      exporters: [debug, file]

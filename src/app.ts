@@ -12,6 +12,7 @@ import { describeRoute } from "hono-openapi";
 import { type PinoLogger, pinoLogger } from "hono-pino";
 import { feedController } from "./controllers/feedController.ts";
 import { feedItemController } from "./controllers/feedItemController.ts";
+import { healthCheckController } from "./controllers/healthCheckController.ts";
 import { logger } from "./logger.ts";
 import type { ErrorResponseModel } from "./models/errorResponse.ts";
 
@@ -66,6 +67,6 @@ if (process.env.NODE_ENV !== "test" && !process.env.DISABLE_PROMETHEUS) {
 	);
 }
 
-app.get("/", (c) => c.body(null, 200)); // healthcheck endpoint
+app.route("/", healthCheckController);
 app.route("/feed", feedController);
 app.route("/feed/:feedSlug/items", feedItemController);
