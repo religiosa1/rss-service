@@ -11,12 +11,12 @@ import { migrate } from "./db/index.ts";
 import { port } from "./globalContext.ts";
 import { logger } from "./logger.ts";
 
-if (!process.env.DB_SKIP_MIGRATIONS) {
+if (process.env.DB_SKIP_MIGRATIONS !== "1") {
 	logger.info("Running migrations...");
 	const ts = performance.now();
 	await migrate();
 	const duration = performance.now() - ts;
-	logger.info({ duration }, `migrations done in ${(duration).toPrecision(3)}ms`);
+	logger.info({ duration }, `migrations done in ${duration.toPrecision(3)}ms`);
 }
 
 export default {

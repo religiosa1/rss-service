@@ -43,11 +43,11 @@ export const app = new Hono<AppEnv>()
 		);
 	});
 
-if (!process.env.DISABLE_OPEN_API) {
+if (process.env.DISABLE_OPEN_API !== "1") {
 	const { openAPISpecs } = await import("hono-openapi");
 	const { openApiSpecs } = await import("./openApiSpecs.ts");
 	app.get("/openapi", openAPISpecs(app, openApiSpecs));
-	if (!process.env.DISABLE_SCALAR) {
+	if (process.env.DISABLE_SCALAR !== "1") {
 		const { Scalar } = await import("@scalar/hono-api-reference");
 		// Scalar web-UI to see/test API
 		app.get("/scalar", Scalar({ url: "/openapi", hideModels: true }));

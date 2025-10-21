@@ -6,7 +6,9 @@
 		"type": "git",
 		"url": "https://github.com/religiosa1/rss-service"
 	},
-	"keywords": ["rss"],
+	"keywords": [
+		"rss"
+	],
 	"license": "MIT",
 	"author": "Viacheslav Azarov <public@religiosa.ru>",
 	"type": "module",

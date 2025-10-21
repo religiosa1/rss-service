@@ -5,18 +5,18 @@ declare global {
 			DB_FILE_NAME?: string;
 			/** authToken for Turso/libsql http */
 			DB_AUTH_TOKEN?: string;
-			/** Do not apply DB migrations on app startup */
-			DB_SKIP_MIGRATIONS?: boolean;
+			/** Do not apply DB migrations on app startup if set to "1" */
+			DB_SKIP_MIGRATIONS?: string;
 			/** TCP Port on which service will run */
 			PORT?: string;
 			/** Host/ip address where to listen to. Defaults to "localhost" */
 			HOST?: string;
-			/** Disable both OpenApi and Scalar documentation */
-			DISABLE_OPEN_API?: boolean;
+			/** Disable both OpenApi and Scalar documentation if set to "1" */
+			DISABLE_OPEN_API?: string;
 			/** Disable Scalar documentation (OpenApi schema will still be on) */
-			DISABLE_SCALAR?: boolean;
-			/** Disable prometheus metrics */
-			DISABLE_PROMETHEUS?: boolean;
+			DISABLE_SCALAR?: string;
+			/** Disable prometheus metrics if set to "1" */
+			DISABLE_PROMETHEUS?: string;
 			/** API key used to authorize the create/update/delete endpoints */
 			API_KEY?: string;
 			/** Public url of the service, for values in feeds */
