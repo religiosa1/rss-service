@@ -1,49 +1,55 @@
-/** biome-ignore-all lint/suspicious/noConfusingVoidType: for consistency with zValidator types */
-/** biome-ignore-all lint/complexity/noBannedTypes: for consistency with zValidator types */
-
-import type { Hook } from "@hono/zod-validator";
+/** biome-ignore-all lint/suspicious/noConfusingVoidType: for consistency with validator types */
+/** biome-ignore-all lint/complexity/noBannedTypes: for consistency with validator types */
 
 import type { Env, Input, MiddlewareHandler, TypedResponse, ValidationTargets } from "hono";
-import { validator as zValidator } from "hono-openapi/zod";
-import type { ZodSchema, z } from "zod";
+import { validator as hValidator, type ResolverReturnType } from "hono-openapi";
+import type { Hook } from "@hono/standard-validator";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
+
+type HasUndefined<T> = undefined extends T ? true : false;
 
 /**
- * Wrapper around hono-openapi/zod, modifying the validation error response
+ * Wrapper around hono-openapi validator, modifying the validation error response
  * shape through a decorated hook.
  *
- * Type information and generic magic are copy-pasted directly from zValidator,
- * with minimal modifications (HasUndefined helper type removed for the sake of brevity)
+ * Type information and generic magic are copy-pasted directly from validator,
+ * with no modifications
  */
 export function validator<
-	T extends ZodSchema,
+	Schema extends StandardSchemaV1<unknown, unknown>,
 	Target extends keyof ValidationTargets,
 	E extends Env,
 	P extends string,
-	In = z.input<T>,
-	Out = z.output<T>,
+	In = StandardSchemaV1.InferInput<Schema>,
+	Out = StandardSchemaV1.InferOutput<Schema>,
 	I extends Input = {
-		in: undefined extends In
+		in: HasUndefined<In> extends true
 			? {
 					[K in Target]?: In extends ValidationTargets[K]
 						? In
 						: {
 								[K2 in keyof In]?: ValidationTargets[K][K2];
-							};
-				}
+						  };
+			  }
 			: {
 					[K in Target]: In extends ValidationTargets[K]
 						? In
 						: {
 								[K2 in keyof In]: ValidationTargets[K][K2];
-							};
-				};
+						  };
+			  };
 		out: {
 			[K in Target]: Out;
 		};
 	},
-	V extends I = I,
->(target: Target, schema: T, hook?: Hook<z.infer<T>, E, P, Target>): MiddlewareHandler<E, P, V> {
-	return zValidator<T, Target, E, P, In, Out, I>(
+	V extends I = I
+>(
+	target: Target,
+	schema: Schema,
+	hook?: Hook<StandardSchemaV1.InferOutput<Schema>, E, P, Target>,
+	options?: ResolverReturnType["options"]
+): MiddlewareHandler<E, P, V> {
+	return hValidator<Schema, Target, E, P, In, Out, I, V>(
 		target,
 		schema,
 		async (result, c): Promise<void | Response | TypedResponse<{}>> => {
@@ -70,6 +76,7 @@ export function validator<
 					400
 				);
 			}
-		}
+		},
+		options
 	);
 }

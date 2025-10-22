@@ -1,6 +1,5 @@
 import { Hono } from "hono";
-import { describeRoute } from "hono-openapi";
-import { resolver } from "hono-openapi/zod";
+import { describeRoute, resolver } from "hono-openapi";
 import { dedent } from "ts-dedent";
 import z from "zod";
 import type { AppEnv } from "../app.ts";

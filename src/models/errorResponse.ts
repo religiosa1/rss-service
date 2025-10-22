@@ -1,7 +1,7 @@
-import { resolver } from "hono-openapi/zod";
+import { resolver } from "hono-openapi";
 import z from "zod";
 
-const errorResponseSchema = z.object({
+export const errorResponseSchema = z.object({
 	success: z.literal(false),
 	status: z.number().int().min(400).max(599),
 	message: z.string(),
@@ -9,7 +9,7 @@ const errorResponseSchema = z.object({
 export type ErrorResponseModel = z.infer<typeof errorResponseSchema>;
 
 export const errorResponseOpenApiSchema = {
-	"application/json": { schema: resolver(errorResponseSchema) },
+	"application/json": { schema: resolver(errorResponseSchema).toOpenAPISchema() },
 } as const;
 
 const zodIssueSchema = z.object({
@@ -30,5 +30,5 @@ const validationErrorResponseSchema = errorResponseSchema.extend({
 });
 
 export const validationErrorResponseOpenApiSchema = {
-	"application/json": { schema: resolver(validationErrorResponseSchema) },
+	"application/json": { schema: resolver(validationErrorResponseSchema).toOpenAPISchema() },
 };

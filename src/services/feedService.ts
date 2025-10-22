@@ -16,7 +16,7 @@ export async function getFeed(feedSlug: string, type: "atom" | "rss" | "json" = 
 		image: dbFeed.image ?? undefined,
 		favicon: dbFeed.favicon ?? undefined,
 		copyright: dbFeed.copyright ?? "unspecified",
-		updated: dbFeed.updatedAt,
+		updated: new Date(dbFeed.updatedAt),
 		generator: generatorValue,
 		author: dbFeed.author ? coerceNullish(dbFeed.author) : undefined,
 	});
@@ -29,7 +29,7 @@ export async function getFeed(feedSlug: string, type: "atom" | "rss" | "json" = 
 			link: item.link,
 			description: item.description ?? undefined,
 			content: item.content ?? undefined,
-			date: item.date,
+			date: new Date(item.date),
 			image: item.image ?? undefined,
 			author: item.authors?.map(coerceNullish) ?? undefined,
 			contributor: item.contributors?.map(coerceNullish) ?? undefined,

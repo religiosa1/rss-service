@@ -66,10 +66,13 @@ function getFeedFromDb() {
 		.groupBy(schema.feed.id);
 }
 
+// TODO leverage codecs instead https://zod.dev/codecs
 function dbItemToFeedModel(item: FeedDbModel): FeedModel {
 	return {
 		...item,
 		link: generateFeedLink(item.slug),
-		updatedAt: new Date(item.updatedAt),
+		modifiedAt: new Date(item.modifiedAt).toISOString(),
+		createdAt: new Date(item.createdAt).toISOString(),
+		updatedAt: new Date(item.updatedAt).toISOString(),
 	};
 }

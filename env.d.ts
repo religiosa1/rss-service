@@ -37,7 +37,7 @@ declare global {
 			 * OTLP collector endpoint. If set, logging information will be
 			 * supported to the provided endpoint (otherwise logs to stdout)
 			 */
-			OTEL_EXPORTER_OTLP_ENDPOINT;
+			OTEL_EXPORTER_OTLP_ENDPOINT?: string;
 			/** Logging-specific override OTLP endpoint */
 			OTEL_EXPORTER_OTLP_LOGS_ENDPOINT?: string;
 

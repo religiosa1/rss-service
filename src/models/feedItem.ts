@@ -4,24 +4,32 @@ import { deepEqual } from "../utils/deepEqual.ts";
 import { authorScheme } from "./author.ts";
 import { slugSchema } from "./slug.ts";
 
-export const feedItemUpdateSchema = z.object({
-	slug: slugSchema,
-	title: z.string().max(FEED_ITEM_TITLE_LENGTH),
-	date: z.date({ coerce: true }),
-	link: z.string().url(),
-	description: z.string().max(FEED_ITEM_DESC_LENGTH).nullish(),
-	content: z.string().nullish(),
-	image: z.string().url().max(URL_LENGTH).nullish(),
-	authors: z.array(authorScheme).nullish(),
-	contributors: z.array(authorScheme).nullish(),
-});
+export const feedItemUpdateSchema = z
+	.object({
+		slug: slugSchema,
+		title: z.string().max(FEED_ITEM_TITLE_LENGTH),
+		date: z.iso.datetime(),
+		link: z.url(),
+		description: z.string().max(FEED_ITEM_DESC_LENGTH).nullish(),
+		content: z.string().nullish(),
+		image: z.url().max(URL_LENGTH).nullish(),
+		authors: z.array(authorScheme).nullish(),
+		contributors: z.array(authorScheme).nullish(),
+	})
+	.meta({
+		ref: "FeedItemUpdateSchema",
+	});
 export type FeedItemUpdateModel = z.infer<typeof feedItemUpdateSchema>;
 
-export const feedItemSchema = feedItemUpdateSchema.extend({
-	id: z.number().int().positive(),
-	createdAt: z.date(),
-	modifiedAt: z.date(),
-});
+export const feedItemSchema = feedItemUpdateSchema
+	.extend({
+		id: z.number().int().positive(),
+		createdAt: z.iso.datetime(),
+		modifiedAt: z.iso.datetime(),
+	})
+	.meta({
+		ref: "FeedItemSchema",
+	});
 export type FeedItemModel = z.infer<typeof feedItemSchema>;
 
 export const multiUpsertSchema = z.object({
@@ -41,7 +49,7 @@ export function isFeedItemsValueEqual(
 ): boolean {
 	if (source.slug !== target.slug) return false;
 	if (source.title !== target.title) return false;
-	if (source.date.getTime() !== target.date.getTime()) return false;
+	if (new Date(source.date).getTime() !== new Date(target.date).getTime()) return false;
 	if (source.link !== target.link) return false;
 	// optional fields
 	if (source.content !== undefined && source.content !== (target.content ?? null)) return false;

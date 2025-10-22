@@ -44,9 +44,9 @@ export const app = new Hono<AppEnv>()
 	});
 
 if (process.env.DISABLE_OPEN_API !== "1") {
-	const { openAPISpecs } = await import("hono-openapi");
+	const { openAPIRouteHandler } = await import("hono-openapi");
 	const { openApiSpecs } = await import("./openApiSpecs.ts");
-	app.get("/openapi", openAPISpecs(app, openApiSpecs));
+	app.get("/openapi", openAPIRouteHandler(app, openApiSpecs));
 	if (process.env.DISABLE_SCALAR !== "1") {
 		const { Scalar } = await import("@scalar/hono-api-reference");
 		// Scalar web-UI to see/test API
