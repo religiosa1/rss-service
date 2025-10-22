@@ -3,12 +3,13 @@ import { FEED_ITEM_DESC_LENGTH, FEED_ITEM_TITLE_LENGTH, URL_LENGTH } from "../co
 import { deepEqual } from "../utils/deepEqual.ts";
 import { authorScheme } from "./author.ts";
 import { slugSchema } from "./slug.ts";
+import { isoDateSchema } from "./isoDate.ts";
 
 export const feedItemUpdateSchema = z
 	.object({
 		slug: slugSchema,
 		title: z.string().max(FEED_ITEM_TITLE_LENGTH),
-		date: z.iso.datetime(),
+		date: isoDateSchema,
 		link: z.url(),
 		description: z.string().max(FEED_ITEM_DESC_LENGTH).nullish(),
 		content: z.string().nullish(),
@@ -24,8 +25,8 @@ export type FeedItemUpdateModel = z.infer<typeof feedItemUpdateSchema>;
 export const feedItemSchema = feedItemUpdateSchema
 	.extend({
 		id: z.number().int().positive(),
-		createdAt: z.iso.datetime(),
-		modifiedAt: z.iso.datetime(),
+		createdAt: isoDateSchema,
+		modifiedAt: isoDateSchema,
 	})
 	.meta({
 		ref: "FeedItemSchema",

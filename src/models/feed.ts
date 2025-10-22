@@ -3,6 +3,7 @@ import z from "zod";
 import { FEED_DESC_LENGTH, FEED_TITLE_LENGTH, URL_LENGTH } from "../constants.ts";
 import { authorScheme } from "./author.ts";
 import { slugSchema } from "./slug.ts";
+import { isoDateSchema } from "./isoDate.ts";
 
 export const feedUpdateSchema = z
 	.object({
@@ -23,10 +24,10 @@ export type FeedUpdateModel = z.infer<typeof feedUpdateSchema>;
 export const feedSchema = feedUpdateSchema
 	.extend({
 		id: z.number().int().positive(),
-		link: z.string().url(),
-		updatedAt: z.iso.datetime().describe("Datetime of the latest entry in the feed"),
-		createdAt: z.iso.datetime().describe("Date of feed creation"),
-		modifiedAt: z.iso.datetime().describe("Date of feed fields last modification"),
+		link: z.url(),
+		updatedAt: isoDateSchema.describe("Datetime of the latest entry in the feed; this is a virtual field"),
+		createdAt: isoDateSchema.describe("Date of feed creation"),
+		modifiedAt: isoDateSchema.describe("Date of feed fields last modification"),
 	})
 	.meta({
 		ref: "FeedSchema",

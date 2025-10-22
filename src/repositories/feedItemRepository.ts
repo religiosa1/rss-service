@@ -13,14 +13,14 @@ import { partition } from "../utils/partition.ts";
 export async function getFeedItems(feedSlug: string): Promise<FeedItemModel[]> {
 	const feedId = await getFeedIdBySlug(feedSlug);
 	const items = await getFeedItemsDbQuery(feedId).limit(MAX_FEED_ITEMS);
-	return items.map(dbItemToFeedItem);
+	return items;
 }
 
 export async function getArchivedFeedItems(feedSlug: string): Promise<FeedItemModel[]> {
 	const feedId = await getFeedIdBySlug(feedSlug);
 	// offset without limit is invalid sqlite expression, but drizzle filters out limit(-1)
 	const items = await getFeedItemsDbQuery(feedId).limit(Number.MAX_SAFE_INTEGER).offset(MAX_FEED_ITEMS);
-	return items.map(dbItemToFeedItem);
+	return items;
 }
 
 export async function createFeedItem(feedSlug: string, values: FeedItemUpdateModel): Promise<FeedItemModel> {
@@ -45,7 +45,7 @@ export async function createFeedItem(feedSlug: string, values: FeedItemUpdateMod
 		await removeOldArchivedItems(feedId, tx);
 		return item;
 	});
-	return dbItemToFeedItem(item);
+	return item;
 }
 
 export async function updateFeedItem(
@@ -61,7 +61,7 @@ export async function updateFeedItem(
 		.returning()
 		.get()
 		.catch(mapDbError);
-	return dbItemToFeedItem(item ?? raise(404, `Unable to find the required slug: ${feedItemSlug} in feed ${feedSlug}`));
+	return item ?? raise(404, `Unable to find the required slug: ${feedItemSlug} in feed ${feedSlug}`);
 }
 
 export async function upsertMultipleFeedItems(
@@ -123,7 +123,7 @@ export async function upsertMultipleFeedItems(
 				.get()
 		);
 		await removeOldArchivedItems(feedId, tx);
-		return [insertedItems.map(dbItemToFeedItem), updatedItems.map(dbItemToFeedItem)];
+		return [insertedItems, updatedItems];
 	});
 
 	const withoutChange = payloadItemsWithoutChange.map(
@@ -198,7 +198,7 @@ async function getDbItemsMap(feedId: number, feedItemSlugs: string[]): Promise<M
 		.from(schema.feedItem)
 		.where(and(eq(schema.feedItem.feedId, feedId), inArray(schema.feedItem.slug, feedItemSlugs)))
 		.all();
-	return new Map(dbItems.map((item) => [item.slug, dbItemToFeedItem(item)]));
+	return new Map(dbItems.map((item) => [item.slug, item]));
 }
 
 function assertSlugUniqueness(items: Array<{ slug: string }>): void {
@@ -208,14 +208,4 @@ function assertSlugUniqueness(items: Array<{ slug: string }>): void {
 			raise(409, `slug ${slug} is not unique among the provided items and is present ${group.length} times`);
 		}
 	}
-}
-
-// TODO leverage codecs instead https://zod.dev/codecs
-function dbItemToFeedItem(dbItem: typeof schema.feedItem.$inferSelect): FeedItemModel {
-	return {
-		...dbItem,
-		date: dbItem.date.toISOString(),
-		createdAt: dbItem.createdAt.toISOString(),
-		modifiedAt: dbItem.modifiedAt.toISOString(),
-	};
 }

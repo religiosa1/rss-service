@@ -49,7 +49,12 @@ export async function deleteFeed(feedSlug: string): Promise<void> {
 	}
 }
 
-type FeedDbModel = typeof schema.feed.$inferSelect & { updatedAt: number };
+type FeedDbModel = typeof schema.feed.$inferSelect & {
+	/** Virtual field, calculated either as the latest feedItem date or if all are empty, as feed creation date */
+	updatedAt: Date;
+};
+
+/** Function for retrieving feedItem AND calculating updatedAt value */
 function getFeedFromDb() {
 	return db
 		.select({
@@ -59,20 +64,18 @@ function getFeedFromDb() {
 					MAX(${schema.feedItem.date}),
 					${schema.feed.createdAt}
 				)
-			`.as("updatedAt"),
+			`
+				.mapWith((val) => new Date(val))
+				.as("updatedAt"),
 		})
 		.from(schema.feed)
 		.leftJoin(schema.feedItem, eq(schema.feedItem.feedId, schema.feed.id))
 		.groupBy(schema.feed.id);
 }
 
-// TODO leverage codecs instead https://zod.dev/codecs
 function dbItemToFeedModel(item: FeedDbModel): FeedModel {
 	return {
 		...item,
 		link: generateFeedLink(item.slug),
-		modifiedAt: new Date(item.modifiedAt).toISOString(),
-		createdAt: new Date(item.createdAt).toISOString(),
-		updatedAt: new Date(item.updatedAt).toISOString(),
 	};
 }
