@@ -35,7 +35,7 @@ feedController.get(
 	async (c) => {
 		const data = await feedRepository.listFeeds();
 		return c.json(data);
-	}
+	},
 );
 
 feedController.post(
@@ -74,7 +74,7 @@ feedController.post(
 		c.var.logger.info({ payload }, `Created feed ${payload.slug}`);
 
 		return c.json(item, 201);
-	}
+	},
 );
 
 feedController.get(
@@ -106,13 +106,13 @@ feedController.get(
 		"param",
 		z.object({
 			feedSlug: slugSchema,
-		})
+		}),
 	),
 	validator(
 		"query",
 		z.object({
 			type: z.enum(["atom", "rss", "json"]).default("atom").describe("Feed output format"),
-		})
+		}),
 	),
 	async (c) => {
 		const { feedSlug } = c.req.valid("param");
@@ -129,7 +129,7 @@ feedController.get(
 		return c.text(data, 200, {
 			"Content-Type": contentType,
 		});
-	}
+	},
 );
 
 feedController.patch(
@@ -179,7 +179,7 @@ feedController.patch(
 		"param",
 		z.object({
 			feedSlug: slugSchema,
-		})
+		}),
 	),
 	validator("json", feedUpdateSchema.partial()),
 	async (c) => {
@@ -188,7 +188,7 @@ feedController.patch(
 		const item = await feedRepository.updateFeed(feedSlug, payload);
 		c.var.logger.info({ feedSlug, payload }, `Patched feed ${feedSlug}${payload.slug ? ` -> ${payload.slug}` : ""}`);
 		return c.json(item);
-	}
+	},
 );
 
 feedController.delete(
@@ -221,12 +221,12 @@ feedController.delete(
 		"param",
 		z.object({
 			feedSlug: slugSchema,
-		})
+		}),
 	),
 	async (c) => {
 		const { feedSlug } = c.req.valid("param");
 		await feedRepository.deleteFeed(feedSlug);
 		c.var.logger.info({ feedSlug }, `Deleted feed ${feedSlug}`);
 		return c.body(null, 204);
-	}
+	},
 );
