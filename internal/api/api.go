@@ -14,8 +14,8 @@ import (
 	"github.com/religiosa1/rss-service/internal/store"
 )
 
-// APIKeyHeader is the header authorizing modification requests.
-const APIKeyHeader = "X-API-Key"
+// apiKeyHeader is the header authorizing modification requests.
+const apiKeyHeader = "X-API-Key"
 
 // maxBodySize limits request bodies; MaxFeedItems items with long content fit.
 const maxBodySize = 32 << 20
@@ -32,10 +32,12 @@ type Config struct {
 type Server struct {
 	db  *store.DB
 	cfg Config
+	// feedsURL is the public url prefix of feeds, ending with a slash.
+	feedsURL string
 }
 
 func New(db *store.DB, cfg Config) *Server {
-	return &Server{db: db, cfg: cfg}
+	return &Server{db: db, cfg: cfg, feedsURL: feedsURL(cfg.PublicURL)}
 }
 
 // Register adds the API routes to mux.
@@ -74,7 +76,7 @@ func (s *Server) auth(next http.Handler) http.Handler {
 	// comparing hashes, so the comparison time doesn't depend on the key length
 	keyHash := sha256.Sum256([]byte(s.cfg.APIKey))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		provided := r.Header.Get(APIKeyHeader)
+		provided := r.Header.Get(apiKeyHeader)
 		providedHash := sha256.Sum256([]byte(provided))
 		if provided == "" || subtle.ConstantTimeCompare(keyHash[:], providedHash[:]) != 1 {
 			writeError(w, r, newError(http.StatusUnauthorized, "Unauthorized"))
@@ -101,9 +103,9 @@ func decodeBody(w http.ResponseWriter, r *http.Request, dest any) error {
 	return nil
 }
 
-// feedLink returns the public url of the feed.
-func (s *Server) feedLink(feedSlug string) string {
-	base := s.cfg.PublicURL
+// feedsURL returns the public url prefix of feeds for the service public url.
+func feedsURL(publicURL string) string {
+	base := publicURL
 	if u, err := url.Parse(base); err == nil && u.Scheme != "" && u.Host != "" {
 		// dropping query and fragment
 		base = u.Scheme + "://" + u.Host + u.Path
@@ -111,5 +113,11 @@ func (s *Server) feedLink(feedSlug string) string {
 	if !strings.HasSuffix(base, "/") {
 		base += "/"
 	}
-	return base + "feed/" + url.PathEscape(feedSlug)
+	return base + "feed/"
+}
+
+// withLink sets the public url of the feed.
+func (s *Server) withLink(f model.Feed) model.Feed {
+	f.Link = s.feedsURL + url.PathEscape(f.Slug)
+	return f
 }

@@ -69,7 +69,7 @@ func (s *testServer) doWithKey(method, path string, body any, apiKey string) *ht
 	}
 	req := httptest.NewRequest(method, path, reader)
 	if apiKey != "" {
-		req.Header.Set(APIKeyHeader, apiKey)
+		req.Header.Set(apiKeyHeader, apiKey)
 	}
 	rec := httptest.NewRecorder()
 	s.handler.ServeHTTP(rec, req)
@@ -182,6 +182,9 @@ func TestStatusCodes(t *testing.T) {
 			response := decode[ErrorResponse](t, rec)
 			if response.Success || response.Status != c.want || response.Message == "" {
 				t.Errorf("%s %s: unexpected error body %s", c.method, c.path, rec.Body)
+			}
+			if strings.Contains(response.Message, "constraint") {
+				t.Errorf("%s %s: sqlite error leaked into the response: %s", c.method, c.path, rec.Body)
 			}
 		}
 	}
@@ -431,7 +434,7 @@ func TestGetFeed(t *testing.T) {
 	}
 }
 
-func TestFeedLink(t *testing.T) {
+func TestWithLink(t *testing.T) {
 	cases := map[string]string{
 		"http://example.com":              "http://example.com/feed/foo",
 		"http://example.com/some-path":    "http://example.com/some-path/feed/foo",
@@ -442,9 +445,9 @@ func TestFeedLink(t *testing.T) {
 		"/some-path":                      "/some-path/feed/foo",
 	}
 	for publicURL, want := range cases {
-		s := &Server{cfg: Config{PublicURL: publicURL}}
-		if got := s.feedLink("foo"); got != want {
-			t.Errorf("feedLink with %q = %q, want %q", publicURL, got, want)
+		s := New(nil, Config{PublicURL: publicURL})
+		if got := s.withLink(model.Feed{Slug: "foo"}).Link; got != want {
+			t.Errorf("link with %q = %q, want %q", publicURL, got, want)
 		}
 	}
 }

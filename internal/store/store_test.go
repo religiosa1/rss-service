@@ -227,15 +227,15 @@ func TestArchive(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	archived, err := db.ListArchivedFeedItems(ctx, "a")
+	all, err := db.ListAllFeedItems(ctx, "a")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(items) != model.MaxFeedItems || len(archived) != model.MaxFeedItemsArchived {
-		t.Fatalf("got %d items, %d archived", len(items), len(archived))
+	if len(items) != model.MaxFeedItems || len(all) != model.MaxFeedItems+model.MaxFeedItemsArchived {
+		t.Fatalf("got %d items, %d in total", len(items), len(all))
 	}
-	if items[0].Slug != fmt.Sprint(total-1) || archived[len(archived)-1].Slug != "10" {
-		t.Errorf("oldest items must be removed first: latest %s, oldest %s", items[0].Slug, archived[len(archived)-1].Slug)
+	if items[0].Slug != fmt.Sprint(total-1) || all[len(all)-1].Slug != "10" {
+		t.Errorf("oldest items must be removed first: latest %s, oldest %s", items[0].Slug, all[len(all)-1].Slug)
 	}
 
 	count, err := db.DeleteAllFeedItems(ctx, "a")
@@ -325,9 +325,10 @@ func TestUpsertFeedItems(t *testing.T) {
 		t.Errorf("withoutChange = %v", result.WithoutChange)
 	}
 
-	_, err = db.UpsertFeedItems(ctx, "a", []model.FeedItemInput{same, same})
+	duplicate := itemInput("duplicate", date)
+	_, err = db.UpsertFeedItems(ctx, "a", []model.FeedItemInput{duplicate, duplicate})
 	if !errors.Is(err, ErrDuplicate) {
-		t.Errorf("duplicated slugs: %v", err)
+		t.Errorf("duplicated new slugs: %v", err)
 	}
 	if _, err := db.UpsertFeedItems(ctx, "missing", []model.FeedItemInput{same}); !errors.Is(err, ErrNotFound) {
 		t.Errorf("missing feed: %v", err)

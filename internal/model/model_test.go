@@ -1,8 +1,12 @@
 package model
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"log/slog"
+	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -79,8 +83,21 @@ func TestFeedItemValidation(t *testing.T) {
 		}
 	}
 
+	empty := validationKeys(FeedItemInput{Slug: Some(""), Image: Some("")}.ValidatePatch())
+	if slices.Sort(empty); !slices.Equal(empty, []string{"image", "slug"}) {
+		t.Errorf("empty strings: got errors for %v", empty)
+	}
+
 	if keys := validationKeys((FeedItemInput{}).ValidateCreate()); len(keys) != 4 {
 		t.Errorf("create without required fields: %v", keys)
+	}
+}
+
+func TestFeedItemLogValue(t *testing.T) {
+	var buf bytes.Buffer
+	slog.New(slog.NewJSONHandler(&buf, nil)).Info("x", "payload", FeedItemInput{Slug: Some("a"), Content: Some("long content")})
+	if strings.Contains(buf.String(), "long content") || !strings.Contains(buf.String(), `"contentLength":12`) {
+		t.Errorf("unexpected log line %s", buf.String())
 	}
 }
 

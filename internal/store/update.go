@@ -2,9 +2,8 @@ package store
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"strings"
-
-	"github.com/religiosa1/rss-service/internal/model"
 )
 
 // updateSet collects SET clause of an UPDATE from the fields present in a
@@ -24,17 +23,17 @@ func (s *updateSet) query(table, where string, whereArgs ...any) (string, []any)
 	return query, append(s.args, whereArgs...)
 }
 
-// addValue adds a non-nullable column, if the field is present.
-func addValue[T any](s *updateSet, column string, field model.Optional[T]) {
-	if value, ok := field.Get(); ok {
-		s.add(column, value)
-	}
+// optionalField is a model.Optional of any type.
+type optionalField interface {
+	driver.Valuer
+	IsSet() bool
 }
 
-// addNullable adds a nullable column, if the field is present or null.
-func addNullable[T any](s *updateSet, column string, field model.Optional[T]) {
+// addIfSet adds the column, if the field is present in the payload; null is
+// stored as NULL, validation rejects it for non-nullable columns.
+func (s *updateSet) addIfSet(column string, field optionalField) {
 	if field.IsSet() {
-		s.add(column, field.Ptr())
+		s.add(column, field)
 	}
 }
 

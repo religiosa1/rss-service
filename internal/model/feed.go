@@ -28,11 +28,14 @@ const (
 
 var slugRe = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
-var slugRules = []validation.Rule{validation.NilOrNotEmpty, validation.RuneLength(1, SlugLength), validation.Match(slugRe)}
+// slugRule validates a slug, if it's present.
+var slugRule = validation.By(func(value any) error {
+	return validation.Validate(value, validation.NilOrNotEmpty, validation.RuneLength(0, SlugLength), validation.Match(slugRe))
+})
 
 // ValidateSlug validates a feed or a feed item slug from a request path.
 func ValidateSlug(slug string) error {
-	return validation.Validate(slug, append([]validation.Rule{validation.Required}, slugRules...)...)
+	return validation.Validate(slug, validation.Required, slugRule)
 }
 
 var errURL = validation.NewError("invalid_url", "must be a valid absolute URL")
@@ -94,12 +97,12 @@ func (f FeedInput) ValidatePatch() error {
 
 func (f FeedInput) validate(requiredRule validation.Rule) error {
 	return validation.ValidateStruct(&f,
-		validation.Field(&f.Slug, append([]validation.Rule{requiredRule}, slugRules...)...),
+		validation.Field(&f.Slug, requiredRule, slugRule),
 		validation.Field(&f.Title, requiredRule, validation.RuneLength(0, TitleLength)),
 		validation.Field(&f.Description, validation.RuneLength(0, DescLength)),
-		validation.Field(&f.Image, validation.RuneLength(0, URLLength), isURL),
-		validation.Field(&f.Favicon, validation.RuneLength(0, URLLength), isURL),
-		validation.Field(&f.Language, validation.RuneLength(2, 128)),
+		validation.Field(&f.Image, validation.NilOrNotEmpty, validation.RuneLength(0, URLLength), isURL),
+		validation.Field(&f.Favicon, validation.NilOrNotEmpty, validation.RuneLength(0, URLLength), isURL),
+		validation.Field(&f.Language, validation.NilOrNotEmpty, validation.RuneLength(2, 128)),
 		validation.Field(&f.Copyright, validation.RuneLength(0, CopyrightLength)),
 		validation.Field(&f.Author),
 	)

@@ -59,20 +59,13 @@ func (s *Server) listAllFeedItems(w http.ResponseWriter, r *http.Request) error 
 	if err != nil {
 		return err
 	}
-	items, err := s.db.ListFeedItems(r.Context(), feedSlug)
+	items, err := s.db.ListAllFeedItems(r.Context(), feedSlug)
 	if err != nil {
 		return err
 	}
-	archived, err := s.db.ListArchivedFeedItems(r.Context(), feedSlug)
-	if err != nil {
-		return err
-	}
-	result := make([]ArchivableFeedItem, 0, len(items)+len(archived))
-	for _, item := range items {
-		result = append(result, ArchivableFeedItem{FeedItem: item})
-	}
-	for _, item := range archived {
-		result = append(result, ArchivableFeedItem{FeedItem: item, Archived: true})
+	result := make([]ArchivableFeedItem, len(items))
+	for i, item := range items {
+		result[i] = ArchivableFeedItem{FeedItem: item, Archived: i >= model.MaxFeedItems}
 	}
 	writeJSON(w, http.StatusOK, result)
 	return nil
@@ -158,9 +151,13 @@ func (s *Server) upsertFeedItems(w http.ResponseWriter, r *http.Request) error {
 	if len(inputs) > model.MaxFeedItems {
 		return newError(http.StatusRequestEntityTooLarge, "Too many items provided, max %d", model.MaxFeedItems)
 	}
-	if err := validation.Validate(inputs, validation.Required); err != nil {
+	if err := validation.Validate(inputs, validation.Required, validation.Each(validateItemCreate)); err != nil {
 		return validationError("body", err)
 	}
+	if err := checkUniqueSlugs(inputs); err != nil {
+		return err
+	}
+	// explicit type, so swag resolves store.UpsertResult in annotations through the import
 	var result store.UpsertResult
 	result, err = s.db.UpsertFeedItems(r.Context(), feedSlug, inputs)
 	if err != nil {
@@ -173,6 +170,22 @@ func (s *Server) upsertFeedItems(w http.ResponseWriter, r *http.Request) error {
 		"withoutChange", itemSlugs(result.WithoutChange),
 	)
 	writeJSON(w, http.StatusOK, result)
+	return nil
+}
+
+var validateItemCreate = validation.By(func(value any) error {
+	return value.(model.FeedItemInput).ValidateCreate()
+})
+
+func checkUniqueSlugs(inputs []model.FeedItemInput) error {
+	seen := make(map[string]bool, len(inputs))
+	for _, input := range inputs {
+		slug, _ := input.Slug.Get()
+		if seen[slug] {
+			return newError(http.StatusConflict, "slug %s is not unique among the provided items", slug)
+		}
+		seen[slug] = true
+	}
 	return nil
 }
 

@@ -121,7 +121,8 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 	case errors.Is(err, store.ErrNotFound):
 		httpErr = newError(http.StatusNotFound, "Not found")
 	case errors.Is(err, store.ErrDuplicate):
-		httpErr = newError(http.StatusConflict, "%s", err)
+		reqlog.From(r.Context()).Info("duplicate record", "err", err)
+		httpErr = newError(http.StatusConflict, "Record with this slug already exists")
 	default:
 		reqlog.From(r.Context()).Error("request failed", "err", err)
 		httpErr = newError(http.StatusInternalServerError, "Internal Server Error")

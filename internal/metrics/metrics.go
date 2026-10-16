@@ -10,6 +10,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+
+	"github.com/religiosa1/rss-service/internal/httpstatus"
 )
 
 var labels = []string{"method", "status", "ok", "route"}
@@ -31,7 +33,7 @@ var (
 // route pattern, so path params don't blow up label cardinality.
 func Handler(mux *http.ServeMux) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		rw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
+		rw := httpstatus.Wrap(w)
 		start := time.Now()
 		mux.ServeHTTP(rw, r)
 
@@ -39,34 +41,11 @@ func Handler(mux *http.ServeMux) http.Handler {
 		_, route, _ := strings.Cut(r.Pattern, " ")
 		values := []string{
 			r.Method,
-			strconv.Itoa(rw.status),
-			strconv.FormatBool(rw.status >= 200 && rw.status < 300),
+			strconv.Itoa(rw.Status),
+			strconv.FormatBool(rw.Status >= 200 && rw.Status < 300),
 			route,
 		}
 		requestDuration.WithLabelValues(values...).Observe(time.Since(start).Seconds())
 		requestsTotal.WithLabelValues(values...).Inc()
 	})
-}
-
-type statusWriter struct {
-	http.ResponseWriter
-	status      int
-	wroteHeader bool
-}
-
-func (w *statusWriter) WriteHeader(code int) {
-	if !w.wroteHeader {
-		w.status = code
-		w.wroteHeader = true
-	}
-	w.ResponseWriter.WriteHeader(code)
-}
-
-func (w *statusWriter) Write(b []byte) (int, error) {
-	w.wroteHeader = true
-	return w.ResponseWriter.Write(b)
-}
-
-func (w *statusWriter) Unwrap() http.ResponseWriter {
-	return w.ResponseWriter
 }

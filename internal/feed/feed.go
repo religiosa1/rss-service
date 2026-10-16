@@ -47,6 +47,7 @@ type Person struct {
 }
 
 // isoLayout matches JS Date.toISOString().
+// NOTE: same as model.isoLayout, duplicated to keep this package dependency-free.
 const isoLayout = "2006-01-02T15:04:05.000Z07:00"
 
 func formatISO(t time.Time) string {

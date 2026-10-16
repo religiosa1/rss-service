@@ -1,6 +1,7 @@
 package feed
 
 import (
+	"bytes"
 	"encoding/xml"
 )
 
@@ -102,9 +103,12 @@ func newAtomPerson(p Person) atomPerson {
 }
 
 func marshalXML(doc any) ([]byte, error) {
-	data, err := xml.MarshalIndent(doc, "", "    ")
-	if err != nil {
+	var buf bytes.Buffer
+	buf.WriteString(xml.Header)
+	enc := xml.NewEncoder(&buf)
+	enc.Indent("", "    ")
+	if err := enc.Encode(doc); err != nil {
 		return nil, err
 	}
-	return append([]byte(xml.Header), data...), nil
+	return buf.Bytes(), nil
 }

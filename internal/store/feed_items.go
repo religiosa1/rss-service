@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -23,15 +22,15 @@ func (db *DB) ListFeedItems(ctx context.Context, feedSlug string) ([]model.FeedI
 	return items, err
 }
 
-// ListArchivedFeedItems returns the items beyond the MaxFeedItems limit, latest first.
-func (db *DB) ListArchivedFeedItems(ctx context.Context, feedSlug string) ([]model.FeedItem, error) {
+// ListAllFeedItems returns all items of the feed, archived included, latest
+// first: items beyond MaxFeedItems are archived.
+func (db *DB) ListAllFeedItems(ctx context.Context, feedSlug string) ([]model.FeedItem, error) {
 	feedID, err := getFeedID(ctx, db, feedSlug)
 	if err != nil {
 		return nil, err
 	}
 	items := []model.FeedItem{}
-	err = db.SelectContext(ctx, &items, `SELECT * FROM feed_item WHERE feed_id = ?`+itemsOrder+` LIMIT -1 OFFSET ?`,
-		feedID, model.MaxFeedItems)
+	err = db.SelectContext(ctx, &items, `SELECT * FROM feed_item WHERE feed_id = ?`+itemsOrder, feedID)
 	return items, err
 }
 
@@ -67,7 +66,8 @@ type UpsertResult struct {
 } // @name MultiUpsertSchema
 
 // UpsertFeedItems inserts new items and patches existing ones (matched by
-// slug), leaving the items without changes as is. Slugs must be unique in inputs.
+// slug), leaving the items without changes as is. Slugs must be unique in
+// inputs, otherwise ErrDuplicate is returned on insert.
 func (db *DB) UpsertFeedItems(ctx context.Context, feedSlug string, inputs []model.FeedItemInput) (UpsertResult, error) {
 	result := UpsertResult{
 		Inserted:      []model.FeedItem{},
@@ -75,15 +75,8 @@ func (db *DB) UpsertFeedItems(ctx context.Context, feedSlug string, inputs []mod
 		WithoutChange: []model.FeedItem{},
 	}
 	slugs := make([]string, len(inputs))
-	seen := make(map[string]int, len(inputs))
 	for i, input := range inputs {
 		slugs[i], _ = input.Slug.Get()
-		seen[slugs[i]]++
-	}
-	for slug, count := range seen {
-		if count > 1 {
-			return result, fmt.Errorf("%w: slug %s is present %d times in the provided items", ErrDuplicate, slug, count)
-		}
 	}
 
 	ts := model.NewTimestamp(time.Now())
@@ -114,6 +107,10 @@ func (db *DB) UpsertFeedItems(ctx context.Context, feedSlug string, inputs []mod
 				}
 				result.Updated = append(result.Updated, item)
 			}
+		}
+		// updates don't change the amount of items
+		if len(result.Inserted) == 0 {
+			return nil
 		}
 		return removeOldArchivedItems(ctx, tx, feedID)
 	})
@@ -178,33 +175,29 @@ func getItemsBySlug(ctx context.Context, q sqlx.QueryerContext, feedID int64, sl
 }
 
 func insertItem(ctx context.Context, q sqlx.QueryerContext, feedID int64, input model.FeedItemInput, ts model.Timestamp) (model.FeedItem, error) {
-	slug, _ := input.Slug.Get()
-	title, _ := input.Title.Get()
-	date, _ := input.Date.Get()
-	link, _ := input.Link.Get()
 	var item model.FeedItem
 	err := sqlx.GetContext(ctx, q, &item, `INSERT INTO feed_item
 		(feed_id, slug, title, date, link, description, content, image, authors, contributors, created_at, modified_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING *`,
-		feedID, slug, title, date, link,
-		input.Description.Ptr(), input.Content.Ptr(), input.Image.Ptr(),
-		input.Authors.Ptr(), input.Contributors.Ptr(), ts, ts,
+		feedID, input.Slug, input.Title, input.Date, input.Link,
+		input.Description, input.Content, input.Image,
+		input.Authors, input.Contributors, ts, ts,
 	)
 	return item, mapError(err)
 }
 
 func updateItem(ctx context.Context, q sqlx.QueryerContext, feedID int64, slug string, input model.FeedItemInput, ts model.Timestamp) (model.FeedItem, error) {
 	var set updateSet
-	addValue(&set, "slug", input.Slug)
-	addValue(&set, "title", input.Title)
-	addValue(&set, "date", input.Date)
-	addValue(&set, "link", input.Link)
-	addNullable(&set, "description", input.Description)
-	addNullable(&set, "content", input.Content)
-	addNullable(&set, "image", input.Image)
-	addNullable(&set, "authors", input.Authors)
-	addNullable(&set, "contributors", input.Contributors)
+	set.addIfSet("slug", input.Slug)
+	set.addIfSet("title", input.Title)
+	set.addIfSet("date", input.Date)
+	set.addIfSet("link", input.Link)
+	set.addIfSet("description", input.Description)
+	set.addIfSet("content", input.Content)
+	set.addIfSet("image", input.Image)
+	set.addIfSet("authors", input.Authors)
+	set.addIfSet("contributors", input.Contributors)
 	set.add("modified_at", ts)
 
 	query, args := set.query("feed_item", "feed_id = ? AND slug = ?", feedID, slug)

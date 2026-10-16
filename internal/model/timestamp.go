@@ -6,12 +6,13 @@ import (
 	"time"
 )
 
-// ISOLayout matches JS Date.toISOString(), which the node.js version used in
+// isoLayout matches JS Date.toISOString(), which the node.js version used in
 // its responses: UTC, always with milliseconds.
-const ISOLayout = "2006-01-02T15:04:05.000Z07:00"
+// NOTE: duplicated in package feed.
+const isoLayout = "2006-01-02T15:04:05.000Z07:00"
 
 // Timestamp is a time stored in DB as integer unix milliseconds (drizzle's
-// timestamp_ms mode) and marshalled to JSON in ISOLayout.
+// timestamp_ms mode) and marshalled to JSON in isoLayout.
 type Timestamp struct {
 	time.Time
 }
@@ -21,7 +22,7 @@ func NewTimestamp(t time.Time) Timestamp {
 }
 
 func (t Timestamp) MarshalJSON() ([]byte, error) {
-	return []byte(`"` + t.UTC().Format(ISOLayout) + `"`), nil
+	return []byte(`"` + t.UTC().Format(isoLayout) + `"`), nil
 }
 
 func (t *Timestamp) UnmarshalJSON(data []byte) error {

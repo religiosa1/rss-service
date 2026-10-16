@@ -34,14 +34,6 @@ func Null[T any]() Optional[T] {
 	return Optional[T]{state: null}
 }
 
-// FromPtr returns Some(*v) or Null for nil.
-func FromPtr[T any](v *T) Optional[T] {
-	if v == nil {
-		return Null[T]()
-	}
-	return Some(*v)
-}
-
 // Get returns the value and whether it's present and not null.
 func (o Optional[T]) Get() (T, bool) {
 	return o.value, o.state == present
@@ -52,14 +44,6 @@ func (o Optional[T]) IsSet() bool { return o.state != absent }
 
 // IsNull reports whether the field was provided as an explicit null.
 func (o Optional[T]) IsNull() bool { return o.state == null }
-
-// Ptr returns a pointer to the value, or nil if it's absent or null.
-func (o Optional[T]) Ptr() *T {
-	if o.state != present {
-		return nil
-	}
-	return &o.value
-}
 
 func (o *Optional[T]) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
@@ -92,13 +76,13 @@ func (o Optional[T]) String() string {
 	}
 }
 
-// Value lets stock validation rules see through Optional, as they unwrap
-// driver.Valuer (see validation.Indirect). Not meant to be used as a DB value.
+// Value stores absent and null fields as NULL. It also lets stock validation
+// rules see through Optional, as they unwrap driver.Valuer (see validation.Indirect).
 func (o Optional[T]) Value() (driver.Value, error) {
 	if o.state != present {
 		return nil, nil
 	}
-	return o.value, nil
+	return driver.DefaultParameterConverter.ConvertValue(o.value)
 }
 
 // Validate validates the held value, if it implements validation.Validatable

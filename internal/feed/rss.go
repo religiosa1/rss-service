@@ -2,11 +2,9 @@ package feed
 
 import (
 	"encoding/xml"
+	"net/http"
 	"time"
 )
-
-// rssDateLayout matches JS Date.toUTCString(), RFC 1123 with GMT zone.
-const rssDateLayout = "Mon, 02 Jan 2006 15:04:05 GMT"
 
 type rssDoc struct {
 	XMLName      xml.Name   `xml:"rss"`
@@ -110,6 +108,7 @@ func (f Feed) RSS() ([]byte, error) {
 	return marshalXML(doc)
 }
 
+// formatRSSDate formats t as RFC 1123 with GMT zone, as JS Date.toUTCString().
 func formatRSSDate(t time.Time) string {
-	return t.UTC().Format(rssDateLayout)
+	return t.UTC().Format(http.TimeFormat)
 }

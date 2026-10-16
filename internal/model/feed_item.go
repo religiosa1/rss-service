@@ -1,6 +1,7 @@
 package model
 
 import (
+	"log/slog"
 	"slices"
 
 	"github.com/invopop/validation"
@@ -46,22 +47,32 @@ func (i FeedItemInput) ValidatePatch() error {
 	return i.validate(notNull)
 }
 
-// Validate implements validation.Validatable for lists of items, which are
-// always full create payloads.
-func (i FeedItemInput) Validate() error {
-	return i.ValidateCreate()
-}
-
 func (i FeedItemInput) validate(requiredRule validation.Rule) error {
 	return validation.ValidateStruct(&i,
-		validation.Field(&i.Slug, append([]validation.Rule{requiredRule}, slugRules...)...),
+		validation.Field(&i.Slug, requiredRule, slugRule),
 		validation.Field(&i.Title, requiredRule, validation.RuneLength(0, TitleLength)),
 		validation.Field(&i.Date, requiredRule),
 		validation.Field(&i.Link, requiredRule, validation.NilOrNotEmpty, isURL),
 		validation.Field(&i.Description, validation.RuneLength(0, DescLength)),
-		validation.Field(&i.Image, validation.RuneLength(0, URLLength), isURL),
+		validation.Field(&i.Image, validation.NilOrNotEmpty, validation.RuneLength(0, URLLength), isURL),
 		validation.Field(&i.Authors),
 		validation.Field(&i.Contributors),
+	)
+}
+
+// LogValue logs the payload without content, which can be arbitrarily long.
+func (i FeedItemInput) LogValue() slog.Value {
+	content, _ := i.Content.Get()
+	return slog.GroupValue(
+		slog.Any("slug", i.Slug),
+		slog.Any("title", i.Title),
+		slog.Any("date", i.Date),
+		slog.Any("link", i.Link),
+		slog.Any("description", i.Description),
+		slog.Int("contentLength", len(content)),
+		slog.Any("image", i.Image),
+		slog.Any("authors", i.Authors),
+		slog.Any("contributors", i.Contributors),
 	)
 }
 

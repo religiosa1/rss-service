@@ -41,7 +41,7 @@ func (s *Server) listFeeds(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	for i := range feeds {
-		feeds[i].Link = s.feedLink(feeds[i].Slug)
+		feeds[i] = s.withLink(feeds[i])
 	}
 	writeJSON(w, http.StatusOK, feeds)
 	return nil
@@ -73,17 +73,21 @@ func (s *Server) createFeed(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	created.Link = s.feedLink(created.Slug)
 	reqlog.From(r.Context()).Info("created feed", "feedSlug", created.Slug, "payload", input)
-	writeJSON(w, http.StatusCreated, created)
+	writeJSON(w, http.StatusCreated, s.withLink(created))
 	return nil
 }
 
-// feedTypes maps the type query param to the content type of the feed.
-var feedTypes = map[string]string{
-	"atom": "application/atom+xml; charset=utf-8",
-	"rss":  "application/rss+xml; charset=utf-8",
-	"json": "application/feed+json; charset=utf-8",
+// feedFormat is a feed format, selected with the type query param.
+type feedFormat struct {
+	contentType string
+	render      func(feed.Feed) ([]byte, error)
+}
+
+var feedFormats = map[string]feedFormat{
+	"atom": {"application/atom+xml; charset=utf-8", feed.Feed.Atom},
+	"rss":  {"application/rss+xml; charset=utf-8", feed.Feed.RSS},
+	"json": {"application/feed+json; charset=utf-8", feed.Feed.JSON},
 }
 
 // getFeed godoc
@@ -107,7 +111,7 @@ func (s *Server) getFeed(w http.ResponseWriter, r *http.Request) error {
 	if feedType == "" {
 		feedType = "atom"
 	}
-	contentType, ok := feedTypes[feedType]
+	format, ok := feedFormats[feedType]
 	if !ok {
 		return &httpError{status: http.StatusBadRequest, message: "Bad request", issues: []Issue{{
 			Code: "invalid_value", Path: []any{"query", "type"}, Message: "must be one of atom, rss, json",
@@ -122,21 +126,11 @@ func (s *Server) getFeed(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	doc := s.buildFeed(dbFeed, items)
-
-	var body []byte
-	switch feedType {
-	case "rss":
-		body, err = doc.RSS()
-	case "json":
-		body, err = doc.JSON()
-	default:
-		body, err = doc.Atom()
-	}
+	body, err := format.render(s.buildFeed(s.withLink(dbFeed), items))
 	if err != nil {
 		return err
 	}
-	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Content-Type", format.contentType)
 	_, err = w.Write(body)
 	return err
 }
@@ -145,7 +139,7 @@ func (s *Server) buildFeed(dbFeed model.Feed, items []model.FeedItem) feed.Feed 
 	doc := feed.Feed{
 		ID:          dbFeed.Slug,
 		Title:       dbFeed.Title,
-		Link:        s.feedLink(dbFeed.Slug),
+		Link:        dbFeed.Link,
 		Description: deref(dbFeed.Description),
 		Language:    deref(dbFeed.Language),
 		Image:       deref(dbFeed.Image),
@@ -159,7 +153,7 @@ func (s *Server) buildFeed(dbFeed model.Feed, items []model.FeedItem) feed.Feed 
 		doc.Copyright = "unspecified"
 	}
 	if dbFeed.Author != nil {
-		author := person(*dbFeed.Author)
+		author := feed.Person(*dbFeed.Author)
 		doc.Author = &author
 	}
 	for _, item := range items {
@@ -173,18 +167,14 @@ func (s *Server) buildFeed(dbFeed model.Feed, items []model.FeedItem) feed.Feed 
 			Date:        item.Date.Time,
 		}
 		for _, author := range item.Authors {
-			entry.Authors = append(entry.Authors, person(author))
+			entry.Authors = append(entry.Authors, feed.Person(author))
 		}
 		for _, contributor := range item.Contributors {
-			entry.Contributors = append(entry.Contributors, person(contributor))
+			entry.Contributors = append(entry.Contributors, feed.Person(contributor))
 		}
 		doc.Items = append(doc.Items, entry)
 	}
 	return doc
-}
-
-func person(a model.Author) feed.Person {
-	return feed.Person{Name: a.Name, Email: a.Email, Link: a.Link, Avatar: a.Avatar}
 }
 
 func deref(s *string) string {
@@ -232,9 +222,8 @@ func (s *Server) updateFeed(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	updated.Link = s.feedLink(updated.Slug)
 	reqlog.From(r.Context()).Info("patched feed", "feedSlug", feedSlug, "newSlug", updated.Slug, "payload", input)
-	writeJSON(w, http.StatusOK, updated)
+	writeJSON(w, http.StatusOK, s.withLink(updated))
 	return nil
 }
 

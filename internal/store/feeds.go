@@ -30,32 +30,31 @@ func (db *DB) GetFeed(ctx context.Context, slug string) (model.Feed, error) {
 
 func (db *DB) CreateFeed(ctx context.Context, input model.FeedInput) (model.Feed, error) {
 	ts := model.NewTimestamp(time.Now())
-	slug, _ := input.Slug.Get()
-	title, _ := input.Title.Get()
 	_, err := db.ExecContext(ctx, `INSERT INTO feed
 		(slug, title, description, image, favicon, language, copyright, author, created_at, modified_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		slug, title,
-		input.Description.Ptr(), input.Image.Ptr(), input.Favicon.Ptr(), input.Language.Ptr(),
-		input.Copyright.Ptr(), input.Author.Ptr(), ts, ts,
+		input.Slug, input.Title,
+		input.Description, input.Image, input.Favicon, input.Language,
+		input.Copyright, input.Author, ts, ts,
 	)
 	if err != nil {
 		return model.Feed{}, mapError(err)
 	}
+	slug, _ := input.Slug.Get()
 	return db.GetFeed(ctx, slug)
 }
 
 // UpdateFeed applies fields present in input to the feed.
 func (db *DB) UpdateFeed(ctx context.Context, slug string, input model.FeedInput) (model.Feed, error) {
 	var set updateSet
-	addValue(&set, "slug", input.Slug)
-	addValue(&set, "title", input.Title)
-	addNullable(&set, "description", input.Description)
-	addNullable(&set, "image", input.Image)
-	addNullable(&set, "favicon", input.Favicon)
-	addNullable(&set, "language", input.Language)
-	addNullable(&set, "copyright", input.Copyright)
-	addNullable(&set, "author", input.Author)
+	set.addIfSet("slug", input.Slug)
+	set.addIfSet("title", input.Title)
+	set.addIfSet("description", input.Description)
+	set.addIfSet("image", input.Image)
+	set.addIfSet("favicon", input.Favicon)
+	set.addIfSet("language", input.Language)
+	set.addIfSet("copyright", input.Copyright)
+	set.addIfSet("author", input.Author)
 	set.add("modified_at", model.NewTimestamp(time.Now()))
 
 	query, args := set.query("feed", "slug = ?", slug)

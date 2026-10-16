@@ -9,6 +9,8 @@ import (
 	"runtime/debug"
 	"time"
 	"uuid"
+
+	"github.com/religiosa1/rss-service/internal/httpstatus"
 )
 
 type loggerKey struct{}
@@ -31,17 +33,17 @@ func Handler(logger *slog.Logger, next http.Handler) http.Handler {
 		}
 		h := &holder{logger: logger.With("request_id", id, "method", r.Method, "path", r.URL.Path)}
 		w.Header().Set("X-Request-ID", id)
-		rw := &responseWriter{ResponseWriter: w, status: http.StatusOK}
+		rw := httpstatus.Wrap(w)
 		start := time.Now()
 
 		serve(rw, r.WithContext(context.WithValue(r.Context(), loggerKey{}, h)), next, h)
 
 		level := slog.LevelInfo
-		if rw.status >= 500 {
+		if rw.Status >= 500 {
 			level = slog.LevelError
 		}
 		h.logger.Log(r.Context(), level, "request completed",
-			"status", rw.status, "duration", time.Since(start))
+			"status", rw.Status, "duration", time.Since(start))
 	})
 }
 
@@ -63,7 +65,7 @@ func validID(id string) bool {
 
 // serve runs next, logging a panic with the request's logger instead of
 // leaving it to net/http, which logs it without the request ID.
-func serve(rw *responseWriter, r *http.Request, next http.Handler, h *holder) {
+func serve(rw *httpstatus.Writer, r *http.Request, next http.Handler, h *holder) {
 	defer func() {
 		v := recover()
 		if v == nil {
@@ -73,7 +75,7 @@ func serve(rw *responseWriter, r *http.Request, next http.Handler, h *holder) {
 			panic(v)
 		}
 		h.logger.Error("panic", "panic", v, "stack", string(debug.Stack()))
-		if rw.wroteHeader {
+		if rw.WroteHeader {
 			// Too late for an error page, abort the response instead.
 			panic(http.ErrAbortHandler)
 		}
@@ -98,29 +100,4 @@ func Add(ctx context.Context, args ...any) {
 	if h, ok := ctx.Value(loggerKey{}).(*holder); ok {
 		h.logger = h.logger.With(args...)
 	}
-}
-
-// responseWriter captures the status code for the completion log.
-type responseWriter struct {
-	http.ResponseWriter
-	status      int
-	wroteHeader bool
-}
-
-func (rw *responseWriter) WriteHeader(code int) {
-	if !rw.wroteHeader {
-		rw.status = code
-		rw.wroteHeader = true
-	}
-	rw.ResponseWriter.WriteHeader(code)
-}
-
-func (rw *responseWriter) Write(b []byte) (int, error) {
-	rw.wroteHeader = true
-	return rw.ResponseWriter.Write(b)
-}
-
-// Unwrap lets http.ResponseController reach the underlying writer.
-func (rw *responseWriter) Unwrap() http.ResponseWriter {
-	return rw.ResponseWriter
 }
