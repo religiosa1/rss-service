@@ -1,0 +1,1091 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Microservice for providing RSS feeds",
+        "title": "rss-service",
+        "contact": {}
+    },
+    "basePath": "/",
+    "paths": {
+        "/": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Healthcheck endpoint",
+                "operationId": "healthcheck",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/HealthCheckResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/feed": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "feed"
+                ],
+                "summary": "List existing feeds",
+                "operationId": "listFeeds",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/FeedSchema"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "feed"
+                ],
+                "summary": "Create a new feed",
+                "operationId": "createFeed",
+                "parameters": [
+                    {
+                        "description": "Feed; slug and title are required",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/FeedUpdateSchema"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/FeedSchema"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ValidationErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Feed with this slug already exists",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/feed/{feedSlug}": {
+            "get": {
+                "produces": [
+                    "application/atom+xml",
+                    "application/rss+xml",
+                    "application/feed+json"
+                ],
+                "tags": [
+                    "feed"
+                ],
+                "summary": "Get a feed in one of the feed formats",
+                "operationId": "getFeedRss",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Feed slug",
+                        "name": "feedSlug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "atom",
+                            "rss",
+                            "json"
+                        ],
+                        "type": "string",
+                        "default": "atom",
+                        "description": "Feed output format",
+                        "name": "type",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ValidationErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "No such feed",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "feed"
+                ],
+                "summary": "Delete an existing feed",
+                "operationId": "deleteFeed",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Feed slug",
+                        "name": "feedSlug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Malformed slug",
+                        "schema": {
+                            "$ref": "#/definitions/ValidationErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Feed with the provided slug doesn't exist",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            },
+            "patch": {
+                "description": "Updates the existing feed (by slug provided in path) with the values\nprovided in the payload. Fields missing in the payload are kept as is,\nnullable fields set to null are removed.\n\nAuthor patch is not deep: if author is present in the payload, it\nreplaces the existing one as a whole.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "feed"
+                ],
+                "summary": "Update existing feed values",
+                "operationId": "updateFeed",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Feed slug",
+                        "name": "feedSlug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Feed fields to update",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/FeedUpdateSchema"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/FeedSchema"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ValidationErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Feed with the provided slug doesn't exist",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Updated slug value already exists",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/feed/{feedSlug}/items": {
+            "get": {
+                "description": "Get a list of all non-archived entries in the feed. The list is never\nbigger than 100 items long.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "feed-item"
+                ],
+                "summary": "Get a list of feed items",
+                "operationId": "getListOfFeedItems",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Feed slug",
+                        "name": "feedSlug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/FeedItemSchema"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ValidationErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Feed with the provided slug doesn't exist",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Upsert many feed items. This endpoint allows you to get all the current feed\nitems from the source and post them to the service, the service will figure\nout whether it's a new item, requires modification (based on provided fields)\nor should be left without changes. Resulting modification status is included\nin the response payload.\n\nEach item will be patched, meaning, if there's an existing item, but you\nprovided only some of its fields, only these fields will be updated.\nStill, you must provide all of the required fields, such as slug, title,\netc., so in case item doesn't exist, it can be created.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "feed-item"
+                ],
+                "summary": "Upsert many feed items",
+                "operationId": "upsertFeedItems",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Feed slug",
+                        "name": "feedSlug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "1 to 100 feed items",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/FeedItemUpdateSchema"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/MultiUpsertSchema"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ValidationErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Feed with the provided slug doesn't exist",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Duplicated slugs in the payload",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "413": {
+                        "description": "More items provided than can be displayed in the feed",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "description": "Creates a new entry (post, article, etc.) in a feed. At any given time\na feed contains 100 entries, when you're adding an entry beyond that\nlimit, the oldest entry moves to archive, which contains 200 additional\nentries. Any older entry from archive is deleted.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "feed-item"
+                ],
+                "summary": "Create a new entry in the feed",
+                "operationId": "createFeedItem",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Feed slug",
+                        "name": "feedSlug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Feed item; slug, title, date and link are required",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/FeedItemUpdateSchema"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/FeedItemSchema"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ValidationErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Feed with the provided slug doesn't exist",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Feed entry item with the same slug already exists in the feed",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/feed/{feedSlug}/items/!all": {
+            "get": {
+                "description": "Get a list of all non-archived and archived entries in the feed.\nThe list is never bigger than 300 items long.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "feed-item"
+                ],
+                "summary": "Get a list of both non-archived and archived feed items",
+                "operationId": "getListOfAllFeedItems",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Feed slug",
+                        "name": "feedSlug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/ArchivableFeedItemSchema"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ValidationErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Feed with the provided slug doesn't exist",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes all items (both current and archived) in a feed.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "feed-item"
+                ],
+                "summary": "Delete all items in a feed",
+                "operationId": "deleteAllItemsInFeed",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Feed slug",
+                        "name": "feedSlug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/DeleteAllResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ValidationErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Feed with the provided slug doesn't exist",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/feed/{feedSlug}/items/{feedItemSlug}": {
+            "delete": {
+                "description": "Deletes an existing feed entry. If archive contains some entries, one of\nthem will be added to the current feed instead of the deleted one (but\ntaking the oldest place). You can also use this endpoint to delete\narchived entries as well.",
+                "tags": [
+                    "feed-item"
+                ],
+                "summary": "Delete an existing feed entry item",
+                "operationId": "deleteFeedItem",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Feed slug",
+                        "name": "feedSlug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Feed item slug",
+                        "name": "feedItemSlug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ValidationErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Feed or entry with the provided slug doesn't exist",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            },
+            "patch": {
+                "description": "Update an existing feed entry with new values. Only specified values\nwill be used. For nullable values you must specify null in the payload\nto reset them, not specifying the field at all keeps the existing value.\n\nUpdates for authors and contributors must come as a full array, with\nall old values present. Setting either value to null removes it.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "feed-item"
+                ],
+                "summary": "Update a feed entry item",
+                "operationId": "updateFeedItem",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Feed slug",
+                        "name": "feedSlug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Feed item slug",
+                        "name": "feedItemSlug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Feed item fields to update",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/FeedItemUpdateSchema"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/FeedItemSchema"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ValidationErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Feed or entry with the provided slug doesn't exist",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Updated slug value already exists in the feed",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "definitions": {
+        "ArchivableFeedItemSchema": {
+            "type": "object",
+            "properties": {
+                "archived": {
+                    "type": "boolean"
+                },
+                "authors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Author"
+                    },
+                    "x-nullable": true
+                },
+                "content": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "contributors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Author"
+                    },
+                    "x-nullable": true
+                },
+                "createdAt": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "date": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "description": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "image": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "link": {
+                    "type": "string"
+                },
+                "modifiedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "DeleteAllResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "description": "Count is the amount of items deleted.",
+                    "type": "integer"
+                }
+            }
+        },
+        "ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer",
+                    "example": 404
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "FeedItemSchema": {
+            "type": "object",
+            "properties": {
+                "authors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Author"
+                    },
+                    "x-nullable": true
+                },
+                "content": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "contributors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Author"
+                    },
+                    "x-nullable": true
+                },
+                "createdAt": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "date": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "description": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "image": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "link": {
+                    "type": "string"
+                },
+                "modifiedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "FeedItemUpdateSchema": {
+            "type": "object",
+            "properties": {
+                "authors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Author"
+                    },
+                    "x-nullable": true
+                },
+                "content": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "contributors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Author"
+                    },
+                    "x-nullable": true
+                },
+                "date": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "description": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "image": {
+                    "type": "string",
+                    "format": "uri",
+                    "x-nullable": true
+                },
+                "link": {
+                    "type": "string",
+                    "format": "uri"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "FeedSchema": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.Author"
+                        }
+                    ],
+                    "x-nullable": true
+                },
+                "copyright": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "createdAt": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "description": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "favicon": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "image": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "language": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "link": {
+                    "type": "string"
+                },
+                "modifiedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "description": "UpdatedAt is the date of the latest item in the feed, or the creation date\nif there're no items.",
+                    "type": "string",
+                    "format": "date-time"
+                }
+            }
+        },
+        "FeedUpdateSchema": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.Author"
+                        }
+                    ],
+                    "x-nullable": true
+                },
+                "copyright": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "description": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "favicon": {
+                    "type": "string",
+                    "format": "uri",
+                    "x-nullable": true
+                },
+                "image": {
+                    "type": "string",
+                    "format": "uri",
+                    "x-nullable": true
+                },
+                "language": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "HealthCheckResponse": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "example": "rss-service"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "MultiUpsertSchema": {
+            "type": "object",
+            "properties": {
+                "inserted": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/FeedItemSchema"
+                    }
+                },
+                "updated": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/FeedItemSchema"
+                    }
+                },
+                "withoutChange": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/FeedItemSchema"
+                    }
+                }
+            }
+        },
+        "ValidationErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "$ref": "#/definitions/api.ValidationDetails"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer",
+                    "example": 404
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "api.Issue": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "validation_length_out_of_range"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "path": {
+                    "description": "Path to the invalid value: field names and array indexes,\nstarting with \"body\", \"path\" or \"query\".",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "body",
+                        "authors",
+                        "0",
+                        "link"
+                    ]
+                }
+            }
+        },
+        "api.ValidationDetails": {
+            "type": "object",
+            "properties": {
+                "issues": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.Issue"
+                    }
+                }
+            }
+        },
+        "model.Author": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "link": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "type": "apiKey",
+            "name": "X-API-Key",
+            "in": "header"
+        }
+    }
+}

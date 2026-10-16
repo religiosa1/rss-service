@@ -1,0 +1,7 @@
+// Type overrides for swag (go generate), as these types have custom JSON encoding.
+// Generic instantiations are named by swag as "$<pkg>.<Type>-<param>".
+replace github.com/religiosa1/rss-service/internal/model.Timestamp string
+replace github.com/religiosa1/rss-service/internal/model.$model.Optional-string string
+replace github.com/religiosa1/rss-service/internal/model.$model.Optional-model_Timestamp string
+replace github.com/religiosa1/rss-service/internal/model.$model.Optional-model_Author github.com/religiosa1/rss-service/internal/model.Author
+replace github.com/religiosa1/rss-service/internal/model.$model.Optional-model_Authors github.com/religiosa1/rss-service/internal/model.Authors

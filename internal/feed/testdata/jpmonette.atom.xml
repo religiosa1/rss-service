@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>full</id>
+    <title>Full feed</title>
+    <updated>2025-01-02T00:00:00.000Z</updated>
+    <generator>rss-service</generator>
+    <author>
+        <name>John Doe</name>
+        <email>john@example.com</email>
+        <uri>https://example.com/john</uri>
+    </author>
+    <link rel="alternate" href="/feed/full"/>
+    <subtitle>desc</subtitle>
+    <logo>https://example.com/logo.png</logo>
+    <icon>https://example.com/favicon.ico</icon>
+    <rights>CC0</rights>
+    <entry>
+        <title type="html"><![CDATA[B]]></title>
+        <id>b</id>
+        <link href="https://example.com/b"/>
+        <updated>2025-01-02T00:00:00.000Z</updated>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[A]]></title>
+        <id>a</id>
+        <link href="https://example.com/a"/>
+        <link rel="enclosure" href="https://example.com/a.jpg" type="image/jpg"/>
+        <updated>2025-01-01T10:30:05.123Z</updated>
+        <summary type="html"><![CDATA[summary <b>a</b>]]></summary>
+        <content type="html"><![CDATA[<p>content ]]]]><![CDATA[> a</p>]]></content>
+        <author>
+            <name>John Doe</name>
+            <uri>https://example.com/</uri>
+        </author>
+        <author>
+            <name>Jane</name>
+            <email>jane@example.com</email>
+        </author>
+        <contributor>
+            <name>Jane Doe</name>
+        </contributor>
+    </entry>
+</feed>

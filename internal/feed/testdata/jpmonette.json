@@ -1,0 +1,32 @@
+{
+    "version": "https://jsonfeed.org/version/1",
+    "title": "Full feed",
+    "home_page_url": "/feed/full",
+    "description": "desc",
+    "icon": "https://example.com/logo.png",
+    "author": {
+        "name": "John Doe",
+        "url": "https://example.com/john"
+    },
+    "items": [
+        {
+            "id": "b",
+            "url": "https://example.com/b",
+            "title": "B",
+            "date_modified": "2025-01-02T00:00:00.000Z"
+        },
+        {
+            "id": "a",
+            "content_html": "<p>content ]]> a</p>",
+            "url": "https://example.com/a",
+            "title": "A",
+            "summary": "summary <b>a</b>",
+            "image": "https://example.com/a.jpg",
+            "date_modified": "2025-01-01T10:30:05.123Z",
+            "author": {
+                "name": "John Doe",
+                "url": "https://example.com/"
+            }
+        }
+    ]
+}

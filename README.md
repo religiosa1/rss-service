@@ -1,115 +1,133 @@
 # RSS feed microservice
 
-Nodejs microservice for providing RSS feeds to some other websites or services 
-or websites, that don't have it.
+Go microservice that provides RSS feeds for websites or services that don't
+have them.
 
 Provides:
-- It exposes REST API endpoints to manage your feeds and feed entry items;
-- Exposes the RSS Feed endpoint itself in rss2.0, atom1.0, json-feed1.0 formats;
-- Stores them in a libsql database, automatically archiving old entries and 
-  and removing archived ones as needed (keeps 100 non-archived and 200 
-  archived entries per feed), managing schema and migration with 
-  [Drizzle](https://orm.drizzle.team/);
-- Authorizes your modification endpoints with X-API-KEY header.
-- Fully validates all received payloads, providing informative and consistent 
-  validation error responses so for an easy setup of your scrappers/clients.
+- REST API endpoints to manage your feeds and feed entry items;
+- The feed endpoint itself in RSS 2.0, Atom 1.0 and JSON Feed 1.1 formats;
+- Storage in a sqlite database, automatically archiving old entries and
+  removing archived ones as needed (keeps 100 non-archived and 200
+  archived entries per feed);
+- Authorization of modification endpoints with the `X-API-Key` header;
+- Full validation of all received payloads, with informative and consistent
+  validation error responses, for an easy setup of your scrapers/clients;
 - Optional OpenAPI/Scalar docs;
-- Prometheus RED metrics (via [@hono/prometheus](https://www.npmjs.com/package/@hono/prometheus));
-- Logs modifications and errors through pino with an optional OpenTelemetry 
-  support;
+- Prometheus RED metrics;
+- Structured logs of modifications and errors through slog, with optional
+  OpenTelemetry export.
 
-The initial reason behind it -- to provide feeds for some websites, scraping
-them with some automation flow (n8n, python scripts, etc.) and posting the
-result to this service, so I can access the feed through a reader, without
-manually checking their websites. 
+The initial reason behind it was to provide feeds for some websites by
+scraping them with an automation flow (n8n, python scripts, etc.) and posting
+the result to this service, so I can access the feed through a reader, without
+manually checking their websites.
 
-In my particular use-case, I'm consuming service output with 
+In my particular use-case, I'm consuming service output with
 [miniflux](https://miniflux.app/) to sync read status across multiple devices.
 
-Uses [feed](https://github.com/jpmonette/feed) library for the actual
-rss generation.
+## The intended usage flow
 
-Requires node v22.18 or higher, as it uses direct typescript execution.
+Create the feed with the `POST /feed` endpoint (see the OpenAPI docs).
 
-## The intended usage flow:
-
-Create the intended feed with `POST /feed` endpoint (see openapi docs).
-
-1. Gather some content you want to have an RSS field (gather posts from your
-   existing blog, ethically scrap some other 3d party blog with a python script,
-   etc.). This can be run on schedule.
-
+1. Gather some content you want to have an RSS feed for (gather posts from your
+   existing blog, ethically scrape some other 3rd party blog with a python
+   script, etc.). This can be run on schedule.
 2. Call `PUT /feed/:feedSlug/items`, providing everything you gathered in the
    body.
-3. Subscribe to the RSS feed in `GET /feed/:feedSlug`
+3. Subscribe to the RSS feed at `GET /feed/:feedSlug`.
 
 ## API Endpoints
 
-All modification endpoints require a API-KEY authentication through
-`X-API-HEADER` supplied in the env variables.
+All modification endpoints require API key authentication through the
+`X-API-Key` header, matching the `API_KEY` env variable.
 
 #### Feed Management (/feed):
 
 - GET /feed - List all feeds
-- GET /feed/:feedSlug - Get RssV2/AtomV1/JsonV1 feed, based on the [type](https://religiosa1.github.io/rss-service/#tag/feed/get/feed/{feedSlug}.query.type) param.
+- GET /feed/:feedSlug - Get RSS 2.0/Atom 1.0/JSON Feed 1.1 feed, based on the [type](https://religiosa1.github.io/rss-service/#tag/feed/get/feed/{feedSlug}.query.type) param.
 - POST /feed - Create feed (auth required)
 - PATCH /feed/:feedSlug - Update feed (auth required)
 - DELETE /feed/:feedSlug - Delete feed (auth required)
 
 #### Feed Items:
 
-- GET /feed/:feedSlug/items/ - List feed items
+- GET /feed/:feedSlug/items - List feed items
 - GET /feed/:feedSlug/items/!all - List all items including archived
-- POST /feed/:feedSlug/items/ - Create item (auth required)
-- PUT /feed/:feedSlug/items/ - Upsert multiple items (auth required)
+- POST /feed/:feedSlug/items - Create item (auth required)
+- PUT /feed/:feedSlug/items - Upsert multiple items (auth required)
 - PATCH /feed/:feedSlug/items/:feedItemSlug - Update item (auth required)
 - DELETE /feed/:feedSlug/items/:feedItemSlug - Delete item (auth required)
-- DELETE /feed/:feedSlug/!all - Delete all items in a feed (auth required)
+- DELETE /feed/:feedSlug/items/!all - Delete all items in a feed (auth required)
 
-#### Documentation endpoints (can be disabled with env config):
+#### Service endpoints (docs and metrics can be disabled with env config):
 
 - GET /scalar - Scalar web-ui documentation
-- GET /openapi - OpenAPI schema
-- GET / - healthcheck, just returns empty 200 response
+- GET /openapi - OpenAPI (Swagger 2.0) schema
+- GET / - healthcheck, returns service name and version
 - GET /metrics - Prometheus metrics (RED)
 
-## OTEL and metrics and OpenAPI schema/Scalar
+Validation errors are returned with status 400 and a list of issues, each with
+a path to the invalid value:
 
-OpenTelemetry logging transport can be enabled by providing either 
-`OTEL_EXPORTER_OTLP_ENDPOINT` or `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` in 
-production mode (aka with NODE_ENV=production)
-
-```sh
-OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 npm run start
+```json
+{
+  "success": false,
+  "status": 400,
+  "message": "Bad request",
+  "error": {
+    "issues": [
+      { "code": "invalid_url", "path": ["body", "authors", 0, "link"], "message": "must be a valid absolute URL" }
+    ]
+  }
+}
 ```
 
-Prometheus metrics ar enabled by default and can be pulled from `/metrics` 
-endpoint. It can be disabled with `DISABLE_PROMETHEUS` env:
+## Configuration
+
+All configuration is provided through env variables:
+
+| Variable                           | Default         | Description                                                            |
+| ---------------------------------- | --------------- | ---------------------------------------------------------------------- |
+| `API_KEY`                          |                 | API key authorizing modification endpoints. If empty, they're open!    |
+| `PUBLIC_URL`                       |                 | Public url of the service, for links in feeds                          |
+| `HOST`                             | `localhost`     | Host/ip address to listen on                                           |
+| `PORT`                             | `3000`          | TCP port to listen on                                                  |
+| `DB_FILE_NAME`                     | `./data.db`     | Path to the sqlite database file (or a `file:` url)                    |
+| `DB_SKIP_MIGRATIONS`               | `false`         | Don't apply DB migrations on startup                                   |
+| `RSS_GENERATOR`                    | `rss-service`   | Value of the "generator" field of feeds                                |
+| `DISABLE_OPEN_API`                 | `false`         | Disable both OpenAPI and Scalar documentation                          |
+| `DISABLE_SCALAR`                   | `false`         | Disable Scalar documentation (OpenAPI schema stays on)                 |
+| `DISABLE_PROMETHEUS`               | `false`         | Disable Prometheus metrics                                             |
+| `LOG_FORMAT`                       | `text`          | `text` or `json`                                                       |
+| `LOG_LEVEL`                        | `info`          | `debug`, `info`, `warn` or `error`                                     |
+| `OTEL_EXPORTER_OTLP_ENDPOINT`      |                 | OTLP collector endpoint; if set, logs are also exported there          |
+| `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` |                 | Logs-specific override of the OTLP endpoint                            |
+| `OTEL_EXPORTER_OTLP_PROTOCOL`      | `http/protobuf` | `http/protobuf` or `grpc`; `OTEL_EXPORTER_OTLP_LOGS_PROTOCOL` overrides it for logs |
+
+Boolean values accept `1`, `true`, `0`, `false` and so on. Other standard
+`OTEL_*` variables (`OTEL_SERVICE_NAME`, `OTEL_RESOURCE_ATTRIBUTES`,
+`OTEL_EXPORTER_OTLP_HEADERS`, etc.) are supported as well.
+
+### OpenTelemetry
+
+OpenTelemetry log export is enabled by providing either
+`OTEL_EXPORTER_OTLP_ENDPOINT` or `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT`. Logs are
+still written to stdout as well.
 
 ```sh
-DISABLE_PROMETHEUS=true npm run start
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 ./rss-service
 ```
 
-OpenAPI schema can be disabled by providing:
-```sh
-DISABLE_OPEN_API=true npm run start # also disables Scalar OpenAPI UI
-```
+[otel-collector-config.yaml](./otel-collector-config.yaml) is a test
+collector config for logging verification.
 
-If you want just to disable Scalar UI, keeping the OpenAPI json:
+## Installation and launch
 
-```sh
-DISABLE_SCALAR=true npm run start
-```
-
-## Installation and launch.
-
-<!--
-TODO: uncomment that, once the docker image is pushed to the ghcr.io by the pipeline
 ### Running with docker
 
-The easiest way to launch the service is to run the provided docker image:
-
 ```sh
+docker build --build-arg VERSION=$(git describe --tags --always --dirty) -t rss-service .
+
 docker volume create rss_service_data
 
 docker run -it --rm \
@@ -118,71 +136,69 @@ docker run -it --rm \
   -e API_KEY=YOUR_API_KEY_HERE \
   -e PUBLIC_URL=http://example.com/ \
   -v rss_service_data:/app/data \
-  ghcr.io/religiosa1/rss-service
+  rss-service
 ```
 
-You can build your own image using the provided Dockerfile:
+The database is stored in `/app/data/rss.db`, owned by uid 1000, the same as in
+the node.js image, so existing volumes can be reused.
+
+### Building from source
+
+Requires Go 1.27 or higher.
 
 ```sh
-docker build -t rss-service .
-``` -->
+CGO_ENABLED=0 go build -buildvcs=true -o rss-service .
+./rss-service
+```
 
-### For local development and direct node deployment:
+The service is accessible at localhost:3000 at this point, and you may want to
+add a reverse proxy if you self-host it.
 
-Clone the latest version of the service:
+`rss-service -version` prints the build version, which is also returned by
+the healthcheck endpoint. Go stamps it from git automatically, so:
+
+- build from a git checkout, with `git` installed, and build the package
+  (`.`), not single files; `go run` never stamps it, showing `(devel)`;
+- `-buildvcs=true` makes the build fail instead of silently omitting the
+  version when it can't be stamped.
+
+| Checkout state                         | Version                                 |
+| -------------------------------------- | --------------------------------------- |
+| HEAD exactly at tag `v0.1.0`           | `v0.1.0`                                |
+| commits after the tag                  | `v0.1.1-0.<date>-<commit>`              |
+| no tags                                | `v0.0.0-<date>-<commit>`                |
+| uncommitted changes                    | any of the above with `+dirty`          |
+
+Docker builds have no `.git` in the context, so the version is passed with
+`--build-arg VERSION=...` and linked in with
+`-ldflags "-X github.com/religiosa1/rss-service/internal/version.override=..."`.
+
+### Migrating from the node.js version
+
+The Go version works with the existing database as is. Schema migrations are
+tracked with sqlite `PRAGMA user_version`; on the first launch the initial
+migration is a no-op for an existing database, as its tables are already
+there. The drizzle `__drizzle_migrations` table is left untouched.
+
+Remote libsql/Turso databases (`libsql://`, `https://` in `DB_FILE_NAME` and
+`DB_AUTH_TOKEN`) are not supported, only local files. `NODE_ENV` is replaced
+with `LOG_FORMAT` and `LOG_LEVEL`.
+
+## Development
 
 ```sh
-npx degit https://github.com/religiosa1/rss-service
+go test ./...
+go generate ./... # regenerates OpenAPI docs in internal/docs from swag annotations
 ```
 
-```sh
-npm install # to install deps
-npm run start # to run the service
-```
+OpenAPI docs are generated with [swag](https://github.com/swaggo/swag) from
+handler annotations in [internal/api](./internal/api).
+[.swaggo](./.swaggo) maps types with custom JSON encoding to their schemas.
 
-Project should be accessible through localhost:3000 at this point, and you may
-want to add a reverse proxy if you self-host it.
-
-### Running in alternative runtimes/cloud
-
-The main mode of operation is as a node service, but service should be
-operational in alternative js/ts runtimes with some modifications.
-
-[[./src/main.ts]] provides a default export without a node serve wrapper and
-should be suitable for running it in other runtimes.
-
-For bun you can run this file directly:
-
-```sh
-bun run --hot src/index.ts # dev mode
-NODE_ENV=production bun run src/main.ts # prod
-```
-
-For deno you need to modify index.ts replacing
-
-```ts
-serve(app);
-```
-
-with
-
-```ts
-Deno.serve(app.fetch);
-```
-
-For launching in service in a cloud, there's a question of database, as it's
-stored in the filesystem by default. As it's a Turso libsql database, you can
-potentially use http connection instead, supplying the authToken.
-
-Please refer to
-[Drizzle documentation](https://orm.drizzle.team/docs/get-started/d1-new)
-and
-[Hono documentation](https://hono.dev/docs/getting-started/cloudflare-workers).
-
-## Configuration
-
-All configuration is provided through the env variables. Please refer to the
-[./env.d.ts](./env.d.ts) to see list of supported environment variables.
+Feed rendering in [internal/feed](./internal/feed) follows the element mapping
+of [jpmonette/feed](https://github.com/jpmonette/feed), used by the node.js
+version, so readers see the same item ids, links and dates;
+`internal/feed/testdata` has its reference output.
 
 ## License
 

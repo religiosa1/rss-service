@@ -1,4 +1,7 @@
 .env
-node_modules
+/rss-service
 *.db
+*.db-shm
+*.db-wal
+!/internal/store/testdata/*.db
 test-logs
