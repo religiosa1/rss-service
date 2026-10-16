@@ -15,12 +15,6 @@ import (
 
 type loggerKey struct{}
 
-// holder is shared by the whole request, so attributes added down the chain
-// (e.g. the user) also end up in the completion line.
-type holder struct {
-	logger *slog.Logger
-}
-
 // Handler takes the request ID from the X-Request-ID header (set by the
 // reverse proxy) or generates one (UUIDv7, so IDs sort by time), returns it
 // in X-Request-ID, puts a tagged logger into the request context, logs the
@@ -31,18 +25,18 @@ func Handler(logger *slog.Logger, next http.Handler) http.Handler {
 		if !validID(id) {
 			id = uuid.NewV7().String()
 		}
-		h := &holder{logger: logger.With("request_id", id, "method", r.Method, "path", r.URL.Path)}
+		logger := logger.With("request_id", id, "method", r.Method, "path", r.URL.Path)
 		w.Header().Set("X-Request-ID", id)
 		rw := httpstatus.Wrap(w)
 		start := time.Now()
 
-		serve(rw, r.WithContext(context.WithValue(r.Context(), loggerKey{}, h)), next, h)
+		serve(rw, r.WithContext(context.WithValue(r.Context(), loggerKey{}, logger)), next, logger)
 
 		level := slog.LevelInfo
 		if rw.Status >= 500 {
 			level = slog.LevelError
 		}
-		h.logger.Log(r.Context(), level, "request completed",
+		logger.Log(r.Context(), level, "request completed",
 			"status", rw.Status, "duration", time.Since(start))
 	})
 }
@@ -65,7 +59,7 @@ func validID(id string) bool {
 
 // serve runs next, logging a panic with the request's logger instead of
 // leaving it to net/http, which logs it without the request ID.
-func serve(rw *httpstatus.Writer, r *http.Request, next http.Handler, h *holder) {
+func serve(rw *httpstatus.Writer, r *http.Request, next http.Handler, logger *slog.Logger) {
 	defer func() {
 		v := recover()
 		if v == nil {
@@ -74,7 +68,7 @@ func serve(rw *httpstatus.Writer, r *http.Request, next http.Handler, h *holder)
 		if v == http.ErrAbortHandler {
 			panic(v)
 		}
-		h.logger.Error("panic", "panic", v, "stack", string(debug.Stack()))
+		logger.Error("panic", "panic", v, "stack", string(debug.Stack()))
 		if rw.WroteHeader {
 			// Too late for an error page, abort the response instead.
 			panic(http.ErrAbortHandler)
@@ -88,16 +82,8 @@ func serve(rw *httpstatus.Writer, r *http.Request, next http.Handler, h *holder)
 
 // From returns the request's logger, or the default one outside a request.
 func From(ctx context.Context) *slog.Logger {
-	if h, ok := ctx.Value(loggerKey{}).(*holder); ok {
-		return h.logger
+	if logger, ok := ctx.Value(loggerKey{}).(*slog.Logger); ok {
+		return logger
 	}
 	return slog.Default()
-}
-
-// Add tags the rest of the request's log lines, including the completion
-// line, with args. No-op outside a request.
-func Add(ctx context.Context, args ...any) {
-	if h, ok := ctx.Value(loggerKey{}).(*holder); ok {
-		h.logger = h.logger.With(args...)
-	}
 }

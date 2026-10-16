@@ -10,7 +10,8 @@ package main
 
 //go:generate go tool swag init --parseInternal --outputTypes go,json --output internal/docs --generalInfo main.go
 // swag doesn't allow "!" in @Router paths, so the "!all" routes are annotated as "__all"
-//go:generate sed -i "s|/items/__all|/items/!all|" internal/docs/docs.go internal/docs/swagger.json
+// (-i.bak works with both GNU and BSD sed)
+//go:generate sh -c "sed -i.bak 's|/items/__all|/items/!all|' internal/docs/docs.go internal/docs/swagger.json && rm internal/docs/*.bak"
 
 import (
 	"cmp"
@@ -40,6 +41,7 @@ type config struct {
 	ListenAddr        string
 	DBPath            string
 	SkipMigrations    bool
+	AllowNoAPIKey     bool
 	DisableOpenAPI    bool
 	DisableScalar     bool
 	DisablePrometheus bool
@@ -64,6 +66,7 @@ func loadConfig() (config, error) {
 	var errs []error
 	for name, dest := range map[string]*bool{
 		"DB_SKIP_MIGRATIONS": &cfg.SkipMigrations,
+		"ALLOW_NO_API_KEY":   &cfg.AllowNoAPIKey,
 		"DISABLE_OPEN_API":   &cfg.DisableOpenAPI,
 		"DISABLE_SCALAR":     &cfg.DisableScalar,
 		"DISABLE_PROMETHEUS": &cfg.DisablePrometheus,
@@ -75,6 +78,9 @@ func loadConfig() (config, error) {
 			}
 			*dest = parsed
 		}
+	}
+	if cfg.API.APIKey == "" && !cfg.AllowNoAPIKey {
+		errs = append(errs, errors.New("API_KEY is not set; set ALLOW_NO_API_KEY=true to run with unauthorized modification endpoints"))
 	}
 	if err := cfg.Log.Level.UnmarshalText([]byte(cmp.Or(os.Getenv("LOG_LEVEL"), "info"))); err != nil {
 		errs = append(errs, fmt.Errorf("invalid LOG_LEVEL: %w", err))
@@ -112,8 +118,11 @@ func run() error {
 		return err
 	}
 	defer func() {
-		// flushing pending OTEL logs, even if ctx is already canceled
-		if err := shutdownLogger(context.WithoutCancel(ctx)); err != nil {
+		// flushing pending OTEL logs, even if ctx is already canceled, but not
+		// hanging on an unreachable collector
+		flushCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer cancel()
+		if err := shutdownLogger(flushCtx); err != nil {
 			slog.Error("error flushing logs", "err", err)
 		}
 	}()
@@ -128,7 +137,10 @@ func run() error {
 	slog.Info("database opened", "path", cfg.DBPath, "skipMigrations", cfg.SkipMigrations, "duration", time.Since(start))
 
 	if cfg.API.APIKey == "" {
-		slog.Warn("API_KEY is not set, modification endpoints are NOT authorized")
+		slog.Warn("API_KEY is not set, modification endpoints are open to anyone")
+	}
+	if cfg.API.PublicURL == "" {
+		slog.Warn("PUBLIC_URL is not set, feed links are relative")
 	}
 
 	mux := http.NewServeMux()

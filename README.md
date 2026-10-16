@@ -8,7 +8,8 @@ Provides:
 - The feed endpoint itself in RSS 2.0, Atom 1.0 and JSON Feed 1.1 formats;
 - Storage in a sqlite database, automatically archiving old entries and
   removing archived ones as needed (keeps 100 non-archived and 200
-  archived entries per feed);
+  archived entries per feed); items older than the whole archive are rejected
+  with 422;
 - Authorization of modification endpoints with the `X-API-Key` header;
 - Full validation of all received payloads, with informative and consistent
   validation error responses, for an easy setup of your scrapers/clients;
@@ -88,7 +89,8 @@ All configuration is provided through env variables:
 
 | Variable                           | Default         | Description                                                            |
 | ---------------------------------- | --------------- | ---------------------------------------------------------------------- |
-| `API_KEY`                          |                 | API key authorizing modification endpoints. If empty, they're open!    |
+| `API_KEY`                          |                 | API key authorizing modification endpoints. Required, unless `ALLOW_NO_API_KEY` is set |
+| `ALLOW_NO_API_KEY`                 | `false`         | Allow starting without `API_KEY`, leaving modification endpoints open! |
 | `PUBLIC_URL`                       |                 | Public url of the service, for links in feeds                          |
 | `HOST`                             | `localhost`     | Host/ip address to listen on                                           |
 | `PORT`                             | `3000`          | TCP port to listen on                                                  |
@@ -183,6 +185,12 @@ there. The drizzle `__drizzle_migrations` table is left untouched.
 Remote libsql/Turso databases (`libsql://`, `https://` in `DB_FILE_NAME` and
 `DB_AUTH_TOKEN`) are not supported, only local files. `NODE_ENV` is replaced
 with `LOG_FORMAT` and `LOG_LEVEL`.
+
+Behavior changes:
+- The service refuses to start without `API_KEY`, unless `ALLOW_NO_API_KEY=true`;
+- Creating (POST) or upserting (PUT) items older than the whole feed archive
+  returns 422 and changes nothing, instead of silently dropping them;
+- Request bodies with trailing data after the JSON value are rejected with 400.
 
 ## Development
 

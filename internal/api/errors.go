@@ -116,8 +116,12 @@ func decodeError(err error) error {
 
 func writeError(w http.ResponseWriter, r *http.Request, err error) {
 	var httpErr *httpError
+	var tooOldErr *store.TooOldError
 	switch {
 	case errors.As(err, &httpErr):
+	case errors.As(err, &tooOldErr):
+		httpErr = newError(http.StatusUnprocessableEntity,
+			"Items are older than the feed archive and would be removed right away: %s", strings.Join(tooOldErr.Slugs, ", "))
 	case errors.Is(err, store.ErrNotFound):
 		httpErr = newError(http.StatusNotFound, "Not found")
 	case errors.Is(err, store.ErrDuplicate):

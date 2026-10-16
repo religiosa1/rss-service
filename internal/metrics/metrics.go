@@ -35,17 +35,26 @@ func Handler(mux *http.ServeMux) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rw := httpstatus.Wrap(w)
 		start := time.Now()
+		completed := false
+		// Deferred without recover, so a panic still reaches reqlog with its
+		// original stack, while the request is counted as the 500 reqlog responds with.
+		defer func() {
+			status := rw.Status
+			if !completed && !rw.WroteHeader {
+				status = http.StatusInternalServerError
+			}
+			// ServeMux sets the pattern on the request it was given
+			_, route, _ := strings.Cut(r.Pattern, " ")
+			values := []string{
+				r.Method,
+				strconv.Itoa(status),
+				strconv.FormatBool(status >= 200 && status < 300),
+				route,
+			}
+			requestDuration.WithLabelValues(values...).Observe(time.Since(start).Seconds())
+			requestsTotal.WithLabelValues(values...).Inc()
+		}()
 		mux.ServeHTTP(rw, r)
-
-		// ServeMux sets the pattern on the request it was given
-		_, route, _ := strings.Cut(r.Pattern, " ")
-		values := []string{
-			r.Method,
-			strconv.Itoa(rw.Status),
-			strconv.FormatBool(rw.Status >= 200 && rw.Status < 300),
-			route,
-		}
-		requestDuration.WithLabelValues(values...).Observe(time.Since(start).Seconds())
-		requestsTotal.WithLabelValues(values...).Inc()
+		completed = true
 	})
 }

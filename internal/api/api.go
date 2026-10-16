@@ -5,6 +5,8 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -97,11 +99,18 @@ func pathSlug(r *http.Request, name string) (string, error) {
 
 func decodeBody(w http.ResponseWriter, r *http.Request, dest any) error {
 	r.Body = http.MaxBytesReader(w, r.Body, maxBodySize)
-	if err := json.NewDecoder(r.Body).Decode(dest); err != nil {
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(dest); err != nil {
 		return decodeError(err)
+	}
+	// Decode reads only the first JSON value, ignoring anything after it
+	if err := dec.Decode(&struct{}{}); err != io.EOF {
+		return decodeError(errTrailingData)
 	}
 	return nil
 }
+
+var errTrailingData = errors.New("unexpected data after the JSON value")
 
 // feedsURL returns the public url prefix of feeds for the service public url.
 func feedsURL(publicURL string) string {

@@ -52,7 +52,7 @@ func (i FeedItemInput) validate(requiredRule validation.Rule) error {
 		validation.Field(&i.Slug, requiredRule, slugRule),
 		validation.Field(&i.Title, requiredRule, validation.RuneLength(0, TitleLength)),
 		validation.Field(&i.Date, requiredRule),
-		validation.Field(&i.Link, requiredRule, validation.NilOrNotEmpty, isURL),
+		validation.Field(&i.Link, requiredRule, validation.NilOrNotEmpty, validation.RuneLength(0, URLLength), isURL),
 		validation.Field(&i.Description, validation.RuneLength(0, DescLength)),
 		validation.Field(&i.Image, validation.NilOrNotEmpty, validation.RuneLength(0, URLLength), isURL),
 		validation.Field(&i.Authors),

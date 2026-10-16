@@ -205,3 +205,32 @@ func parseXML(t *testing.T, doc string) node {
 	root.Text = strings.TrimSpace(root.Text)
 	return root
 }
+
+func TestXMLDropsInvalidChars(t *testing.T) {
+	f := Feed{
+		Title: "feed\x00",
+		Items: []Item{{
+			ID:      "a",
+			Title:   "bad\vtitle",
+			Content: "content\x01 ]]> with\ttab",
+			Authors: []Person{{Name: "x\x1f", Email: "x@example.com"}},
+		}},
+	}
+	for name, render := range map[string]func() ([]byte, error){"atom": f.Atom, "rss": f.RSS} {
+		data, err := render()
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		dec := xml.NewDecoder(bytes.NewReader(data))
+		for {
+			if _, err := dec.Token(); err == io.EOF {
+				break
+			} else if err != nil {
+				t.Fatalf("%s: invalid XML: %v\n%s", name, err, data)
+			}
+		}
+		if !bytes.Contains(data, []byte("badtitle")) || !bytes.Contains(data, []byte("with\ttab")) {
+			t.Errorf("%s: unexpected text:\n%s", name, data)
+		}
+	}
+}

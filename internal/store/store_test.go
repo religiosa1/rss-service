@@ -238,6 +238,20 @@ func TestArchive(t *testing.T) {
 		t.Errorf("oldest items must be removed first: latest %s, oldest %s", items[0].Slug, all[len(all)-1].Slug)
 	}
 
+	tooOld := itemInput("too-old", start)
+	_, err = db.CreateFeedItem(ctx, "a", tooOld)
+	if tooOldErr, ok := errors.AsType[*TooOldError](err); !ok || !slices.Equal(tooOldErr.Slugs, []string{"too-old"}) {
+		t.Errorf("create of a too old item: %v", err)
+	}
+	recent := itemInput("recent", start.Add(time.Duration(total)*time.Hour))
+	_, err = db.UpsertFeedItems(ctx, "a", []model.FeedItemInput{recent, tooOld})
+	if _, ok := errors.AsType[*TooOldError](err); !ok {
+		t.Errorf("upsert with a too old item: %v", err)
+	}
+	if all, err := db.ListAllFeedItems(ctx, "a"); err != nil || len(all) != model.MaxFeedItems+model.MaxFeedItemsArchived || all[0].Slug == "recent" {
+		t.Errorf("too old items must roll back the whole change: %d items, %v", len(all), err)
+	}
+
 	count, err := db.DeleteAllFeedItems(ctx, "a")
 	if err != nil || count != int64(model.MaxFeedItems+model.MaxFeedItemsArchived) {
 		t.Errorf("deleted %d, %v", count, err)

@@ -51,6 +51,7 @@ type atomPerson struct {
 
 // Atom renders the feed as Atom 1.0.
 func (f Feed) Atom() ([]byte, error) {
+	f = f.xmlSafe()
 	doc := atomFeed{
 		Xmlns:     "http://www.w3.org/2005/Atom",
 		ID:        f.ID,

@@ -118,11 +118,7 @@ func (s *Server) getFeed(w http.ResponseWriter, r *http.Request) error {
 		}}}
 	}
 
-	dbFeed, err := s.db.GetFeed(r.Context(), feedSlug)
-	if err != nil {
-		return err
-	}
-	items, err := s.db.ListFeedItems(r.Context(), feedSlug)
+	dbFeed, items, err := s.db.GetFeedWithItems(r.Context(), feedSlug)
 	if err != nil {
 		return err
 	}

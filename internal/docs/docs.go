@@ -392,6 +392,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
                         }
+                    },
+                    "422": {
+                        "description": "Item is older than the whole feed archive",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
                     }
                 },
                 "security": [
@@ -458,6 +464,12 @@ const docTemplate = `{
                     },
                     "409": {
                         "description": "Feed entry item with the same slug already exists in the feed",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Item is older than the whole feed archive",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
                         }

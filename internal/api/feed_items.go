@@ -90,6 +90,7 @@ func (s *Server) listAllFeedItems(w http.ResponseWriter, r *http.Request) error 
 //	@Failure		401			{object}	ErrorResponse
 //	@Failure		404			{object}	ErrorResponse	"Feed with the provided slug doesn't exist"
 //	@Failure		409			{object}	ErrorResponse	"Feed entry item with the same slug already exists in the feed"
+//	@Failure		422			{object}	ErrorResponse	"Item is older than the whole feed archive"
 //	@Router			/feed/{feedSlug}/items [post]
 func (s *Server) createFeedItem(w http.ResponseWriter, r *http.Request) error {
 	feedSlug, err := pathSlug(r, "feedSlug")
@@ -138,6 +139,7 @@ func (s *Server) createFeedItem(w http.ResponseWriter, r *http.Request) error {
 //	@Failure		404			{object}	ErrorResponse	"Feed with the provided slug doesn't exist"
 //	@Failure		409			{object}	ErrorResponse	"Duplicated slugs in the payload"
 //	@Failure		413			{object}	ErrorResponse	"More items provided than can be displayed in the feed"
+//	@Failure		422			{object}	ErrorResponse	"Item is older than the whole feed archive"
 //	@Router			/feed/{feedSlug}/items [put]
 func (s *Server) upsertFeedItems(w http.ResponseWriter, r *http.Request) error {
 	feedSlug, err := pathSlug(r, "feedSlug")

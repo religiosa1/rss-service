@@ -135,6 +135,7 @@ func TestStatusCodes(t *testing.T) {
 		{"POST", "/feed", map[string]any{"slug": "x", "title": "x", "image": "not-url"}, 400},
 		{"POST", "/feed", testFeed, 409},
 		{"POST", "/feed", "{not json", 400},
+		{"POST", "/feed", `{"slug": "y", "title": "y"} {}`, 400},
 		{"PATCH", "/feed/!!!", map[string]any{"title": "x"}, 400},
 		{"PATCH", "/feed/test", map[string]any{"title": nil}, 400},
 		{"PATCH", "/feed/test", map[string]any{"slug": "other"}, 409},
@@ -162,6 +163,7 @@ func TestStatusCodes(t *testing.T) {
 		{"PATCH", "/feed/!!!/items/item", map[string]any{"title": "x"}, 400},
 		{"PATCH", "/feed/test/items/!!!", map[string]any{"title": "x"}, 400},
 		{"PATCH", "/feed/test/items/item", map[string]any{"link": "nope"}, 400},
+		{"PATCH", "/feed/test/items/item", map[string]any{"link": "https://example.com/" + strings.Repeat("a", model.URLLength)}, 400},
 		{"PATCH", "/feed/test/items/item", map[string]any{"slug": "item2"}, 409},
 		{"PATCH", "/feed/missing/items/item", map[string]any{"title": "x"}, 404},
 		{"PATCH", "/feed/test/items/missing", map[string]any{"title": "x"}, 404},
@@ -188,6 +190,27 @@ func TestStatusCodes(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestTooOldItem(t *testing.T) {
+	s := newAuthTestServer(t)
+	s.mustDo("POST", "/feed", testFeed, http.StatusCreated)
+	for batch := range (model.MaxFeedItems + model.MaxFeedItemsArchived) / model.MaxFeedItems {
+		items := make([]any, model.MaxFeedItems)
+		for i := range items {
+			items[i] = testItem(fmt.Sprintf("%d-%d", batch, i), "2025-01-01T10:30:00.000Z")
+		}
+		s.mustDo("PUT", "/feed/test/items", items, http.StatusOK)
+	}
+
+	rec := s.mustDo("POST", "/feed/test/items", testItem("old", "2020-01-01T00:00:00.000Z"), http.StatusUnprocessableEntity)
+	if response := decode[ErrorResponse](t, rec); !strings.Contains(response.Message, "old") {
+		t.Errorf("too old slug not reported: %s", rec.Body)
+	}
+	s.mustDo("PUT", "/feed/test/items", []any{
+		testItem("new", "2026-01-01T00:00:00.000Z"),
+		testItem("old", "2020-01-01T00:00:00.000Z"),
+	}, http.StatusUnprocessableEntity)
 }
 
 func TestUnauthorized(t *testing.T) {

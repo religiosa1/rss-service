@@ -102,16 +102,3 @@ func TestHandlerIncomingID(t *testing.T) {
 		}
 	}
 }
-
-func TestAdd(t *testing.T) {
-	_, lines := logLines(t, "", func(_ http.ResponseWriter, r *http.Request) {
-		Add(r.Context(), "user", "Alice")
-		From(r.Context()).Info("inside")
-	})
-	for _, line := range lines {
-		if line["user"] != "Alice" {
-			t.Errorf("line not tagged with the user: %v", line)
-		}
-	}
-	Add(t.Context(), "user", "Bob") // outside a request: must not panic
-}

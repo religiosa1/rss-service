@@ -16,7 +16,7 @@ RUN CGO_ENABLED=0 go build -trimpath -buildvcs=false \
 FROM gcr.io/distroless/static-debian12
 
 # Secrets should be mounted or provided at runtime:
-# - API_KEY (required)
+# - API_KEY (required, unless ALLOW_NO_API_KEY=true)
 
 # Required: PUBLIC_URL should be provided at runtime
 ENV PUBLIC_URL=""

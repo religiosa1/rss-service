@@ -2,6 +2,8 @@ package store
 
 import (
 	"context"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -16,8 +18,23 @@ func (db *DB) ListFeedItems(ctx context.Context, feedSlug string) ([]model.FeedI
 	if err != nil {
 		return nil, err
 	}
+	return listItems(ctx, db, feedID)
+}
+
+// GetFeedWithItems returns the feed along with its non-archived items.
+func (db *DB) GetFeedWithItems(ctx context.Context, feedSlug string) (model.Feed, []model.FeedItem, error) {
+	// NOTE: not in a tx, as _txlock=immediate makes every tx take the write lock
+	feed, err := db.GetFeed(ctx, feedSlug)
+	if err != nil {
+		return model.Feed{}, nil, err
+	}
+	items, err := listItems(ctx, db, feed.ID)
+	return feed, items, err
+}
+
+func listItems(ctx context.Context, q sqlx.QueryerContext, feedID int64) ([]model.FeedItem, error) {
 	items := []model.FeedItem{}
-	err = db.SelectContext(ctx, &items, `SELECT * FROM feed_item WHERE feed_id = ?`+itemsOrder+` LIMIT ?`,
+	err := sqlx.SelectContext(ctx, q, &items, `SELECT * FROM feed_item WHERE feed_id = ?`+itemsOrder+` LIMIT ?`,
 		feedID, model.MaxFeedItems)
 	return items, err
 }
@@ -34,6 +51,8 @@ func (db *DB) ListAllFeedItems(ctx context.Context, feedSlug string) ([]model.Fe
 	return items, err
 }
 
+// CreateFeedItem inserts the item, returning TooOldError if it's older than
+// the whole feed archive.
 func (db *DB) CreateFeedItem(ctx context.Context, feedSlug string, input model.FeedItemInput) (item model.FeedItem, err error) {
 	err = db.inTx(ctx, func(tx *sqlx.Tx) error {
 		feedID, err := getFeedID(ctx, tx, feedSlug)
@@ -44,7 +63,7 @@ func (db *DB) CreateFeedItem(ctx context.Context, feedSlug string, input model.F
 		if err != nil {
 			return err
 		}
-		return removeOldArchivedItems(ctx, tx, feedID)
+		return pruneArchive(ctx, tx, feedID, []model.FeedItem{item})
 	})
 	return item, err
 }
@@ -67,7 +86,8 @@ type UpsertResult struct {
 
 // UpsertFeedItems inserts new items and patches existing ones (matched by
 // slug), leaving the items without changes as is. Slugs must be unique in
-// inputs, otherwise ErrDuplicate is returned on insert.
+// inputs, otherwise ErrDuplicate is returned on insert. Nothing is changed and
+// TooOldError is returned, if any new item is older than the whole feed archive.
 func (db *DB) UpsertFeedItems(ctx context.Context, feedSlug string, inputs []model.FeedItemInput) (UpsertResult, error) {
 	result := UpsertResult{
 		Inserted:      []model.FeedItem{},
@@ -112,7 +132,7 @@ func (db *DB) UpsertFeedItems(ctx context.Context, feedSlug string, inputs []mod
 		if len(result.Inserted) == 0 {
 			return nil
 		}
-		return removeOldArchivedItems(ctx, tx, feedID)
+		return pruneArchive(ctx, tx, feedID, result.Inserted)
 	})
 	return result, err
 }
@@ -206,10 +226,34 @@ func updateItem(ctx context.Context, q sqlx.QueryerContext, feedID int64, slug s
 	return item, mapError(err)
 }
 
-// removeOldArchivedItems keeps only MaxFeedItems + MaxFeedItemsArchived latest items in the feed.
-func removeOldArchivedItems(ctx context.Context, e sqlx.ExecerContext, feedID int64) error {
-	_, err := e.ExecContext(ctx, `DELETE FROM feed_item WHERE feed_id = ? AND id NOT IN (
+// TooOldError is returned when inserted items are older than the whole feed
+// archive, so they would be removed right away.
+type TooOldError struct {
+	Slugs []string
+}
+
+func (e *TooOldError) Error() string {
+	return "items are older than the feed archive: " + strings.Join(e.Slugs, ", ")
+}
+
+// pruneArchive keeps only MaxFeedItems + MaxFeedItemsArchived latest items in
+// the feed. Returns TooOldError if any of the just inserted items got pruned.
+func pruneArchive(ctx context.Context, q sqlx.QueryerContext, feedID int64, inserted []model.FeedItem) error {
+	var removed []int64
+	err := sqlx.SelectContext(ctx, q, &removed, `DELETE FROM feed_item WHERE feed_id = ? AND id NOT IN (
 		SELECT id FROM feed_item WHERE feed_id = ?`+itemsOrder+` LIMIT ?
-	)`, feedID, feedID, model.MaxFeedItems+model.MaxFeedItemsArchived)
-	return err
+	) RETURNING id`, feedID, feedID, model.MaxFeedItems+model.MaxFeedItemsArchived)
+	if err != nil {
+		return err
+	}
+	var tooOld []string
+	for _, item := range inserted {
+		if slices.Contains(removed, item.ID) {
+			tooOld = append(tooOld, item.Slug)
+		}
+	}
+	if len(tooOld) > 0 {
+		return &TooOldError{Slugs: tooOld}
+	}
+	return nil
 }

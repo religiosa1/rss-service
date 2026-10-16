@@ -61,6 +61,7 @@ type rssEnclosure struct {
 
 // RSS renders the feed as RSS 2.0.
 func (f Feed) RSS() ([]byte, error) {
+	f = f.xmlSafe()
 	doc := rssDoc{
 		Version: "2.0",
 		Channel: rssChannel{
