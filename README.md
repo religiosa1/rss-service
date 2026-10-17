@@ -205,8 +205,10 @@ Behavior changes:
 ## Development
 
 ```sh
-go test ./...
-go generate ./... # regenerates OpenAPI docs in internal/docs from swag annotations
+make test     # go test -race ./...
+make generate # regenerates OpenAPI docs in internal/docs from swag annotations
+make check    # everything CI runs: docs up to date, lint, tests
+make help     # all targets
 ```
 
 OpenAPI docs are generated with [swag](https://github.com/swaggo/swag) from
