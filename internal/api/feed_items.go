@@ -31,7 +31,7 @@ func (s *Server) listFeedItems(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	writeJSON(w, http.StatusOK, items)
+	writeJSON(w, r, http.StatusOK, items)
 	return nil
 }
 
@@ -67,7 +67,7 @@ func (s *Server) listAllFeedItems(w http.ResponseWriter, r *http.Request) error 
 	for i, item := range items {
 		result[i] = ArchivableFeedItem{FeedItem: item, Archived: i >= model.MaxFeedItems}
 	}
-	writeJSON(w, http.StatusOK, result)
+	writeJSON(w, r, http.StatusOK, result)
 	return nil
 }
 
@@ -109,7 +109,7 @@ func (s *Server) createFeedItem(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	reqlog.From(r.Context()).Info("created feed item", "feedSlug", feedSlug, "feedItemSlug", item.Slug, "payload", input)
-	writeJSON(w, http.StatusCreated, item)
+	writeJSON(w, r, http.StatusCreated, item)
 	return nil
 }
 
@@ -171,7 +171,7 @@ func (s *Server) upsertFeedItems(w http.ResponseWriter, r *http.Request) error {
 		"updated", itemSlugs(result.Updated),
 		"withoutChange", itemSlugs(result.WithoutChange),
 	)
-	writeJSON(w, http.StatusOK, result)
+	writeJSON(w, r, http.StatusOK, result)
 	return nil
 }
 
@@ -244,7 +244,7 @@ func (s *Server) updateFeedItem(w http.ResponseWriter, r *http.Request) error {
 	}
 	reqlog.From(r.Context()).Info("patched feed item",
 		"feedSlug", feedSlug, "feedItemSlug", itemSlug, "newSlug", item.Slug, "payload", input)
-	writeJSON(w, http.StatusOK, item)
+	writeJSON(w, r, http.StatusOK, item)
 	return nil
 }
 
@@ -278,7 +278,7 @@ func (s *Server) deleteAllFeedItems(w http.ResponseWriter, r *http.Request) erro
 		return err
 	}
 	reqlog.From(r.Context()).Info("deleted all feed items", "feedSlug", feedSlug, "count", count)
-	writeJSON(w, http.StatusOK, DeleteAllResponse{Count: count})
+	writeJSON(w, r, http.StatusOK, DeleteAllResponse{Count: count})
 	return nil
 }
 

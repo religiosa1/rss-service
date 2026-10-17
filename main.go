@@ -49,43 +49,36 @@ type config struct {
 	Log               logConfig
 }
 
-func loadConfig() (config, error) {
-	cfg := config{
-		ListenAddr: net.JoinHostPort(cmp.Or(os.Getenv("HOST"), "localhost"), cmp.Or(os.Getenv("PORT"), "3000")),
-		DBPath:     cmp.Or(os.Getenv("DB_FILE_NAME"), "./data.db"),
-		API: api.Config{
-			APIKey:    os.Getenv("API_KEY"),
-			PublicURL: os.Getenv("PUBLIC_URL"),
-			Generator: cmp.Or(os.Getenv("RSS_GENERATOR"), serviceName),
-		},
-		Log: logConfig{
-			Format: os.Getenv("LOG_FORMAT"),
-			OTEL:   otelLogsEnabled(),
-		},
+// Exit codes by error class. Explicit values, as they're a contract with
+// whatever supervises the process.
+const (
+	// ExitCodeRun is an unclassified runtime failure.
+	ExitCodeRun = 1
+	// ExitCodeFlag is invalid command line usage, same as the flag package
+	// exits with on unknown flags.
+	ExitCodeFlag = 2
+	// ExitCodeConfig is invalid env configuration, including logging setup.
+	ExitCodeConfig = 3
+	// ExitCodeDB is failure to open the database or apply migrations.
+	ExitCodeDB = 4
+	// ExitCodeServer is failure to listen or to shut the server down gracefully.
+	ExitCodeServer = 5
+)
+
+// exitError assigns an exit code to the error returned from run.
+type exitError struct {
+	code int
+	err  error
+}
+
+func (e *exitError) Error() string { return e.err.Error() }
+func (e *exitError) Unwrap() error { return e.err }
+
+func withExitCode(code int, err error) error {
+	if err == nil {
+		return nil
 	}
-	var errs []error
-	for name, dest := range map[string]*bool{
-		"DB_SKIP_MIGRATIONS": &cfg.SkipMigrations,
-		"ALLOW_NO_API_KEY":   &cfg.AllowNoAPIKey,
-		"DISABLE_OPEN_API":   &cfg.DisableOpenAPI,
-		"DISABLE_SCALAR":     &cfg.DisableScalar,
-		"DISABLE_PROMETHEUS": &cfg.DisablePrometheus,
-	} {
-		if value := os.Getenv(name); value != "" {
-			parsed, err := strconv.ParseBool(value)
-			if err != nil {
-				errs = append(errs, fmt.Errorf("invalid %s: %w", name, err))
-			}
-			*dest = parsed
-		}
-	}
-	if cfg.API.APIKey == "" && !cfg.AllowNoAPIKey {
-		errs = append(errs, errors.New("API_KEY is not set; set ALLOW_NO_API_KEY=true to run with unauthorized modification endpoints"))
-	}
-	if err := cfg.Log.Level.UnmarshalText([]byte(cmp.Or(os.Getenv("LOG_LEVEL"), "info"))); err != nil {
-		errs = append(errs, fmt.Errorf("invalid LOG_LEVEL: %w", err))
-	}
-	return cfg, errors.Join(errs...)
+	return &exitError{code: code, err: err}
 }
 
 func main() {
@@ -98,16 +91,26 @@ func main() {
 		return
 	}
 
+	if flag.NArg() > 0 {
+		fmt.Fprintf(os.Stderr, "error: unexpected arguments: %v\n", flag.Args())
+		flag.Usage()
+		os.Exit(ExitCodeFlag)
+	}
+
 	if err := run(); err != nil {
-		slog.Error("fatal error", "err", err)
-		os.Exit(1)
+		code := ExitCodeRun
+		if exitErr, ok := errors.AsType[*exitError](err); ok {
+			code = exitErr.code
+		}
+		slog.Error("fatal error", "err", err, "exitCode", code)
+		os.Exit(code)
 	}
 }
 
 func run() error {
 	cfg, err := loadConfig()
 	if err != nil {
-		return err
+		return withExitCode(ExitCodeConfig, fmt.Errorf("config error: %w", err))
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -115,7 +118,7 @@ func run() error {
 
 	logger, shutdownLogger, err := setupLogger(ctx, cfg.Log, os.Stdout)
 	if err != nil {
-		return err
+		return withExitCode(ExitCodeConfig, err)
 	}
 	defer func() {
 		// flushing pending OTEL logs, even if ctx is already canceled, but not
@@ -131,9 +134,13 @@ func run() error {
 	start := time.Now()
 	db, err := store.Open(cfg.DBPath, store.Options{SkipMigrations: cfg.SkipMigrations})
 	if err != nil {
-		return err
+		return withExitCode(ExitCodeDB, err)
 	}
-	defer func() { _ = db.Close() }()
+	defer func() {
+		if err := db.Close(); err != nil {
+			slog.Error("error closing the db", "err", err)
+		}
+	}()
 	slog.Info("database opened", "path", cfg.DBPath, "skipMigrations", cfg.SkipMigrations, "duration", time.Since(start))
 
 	if cfg.API.APIKey == "" {
@@ -174,11 +181,54 @@ func run() error {
 
 	select {
 	case err := <-serveErr:
-		return err
+		return withExitCode(ExitCodeServer, err)
 	case <-ctx.Done():
 	}
 	slog.Info("shutting down")
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	return server.Shutdown(shutdownCtx)
+	return withExitCode(ExitCodeServer, server.Shutdown(shutdownCtx))
+}
+
+func loadConfig() (config, error) {
+	listenAddr := net.JoinHostPort(
+		cmp.Or(os.Getenv("HOST"), "localhost"),
+		cmp.Or(os.Getenv("PORT"), "3000"),
+	)
+	cfg := config{
+		ListenAddr: listenAddr,
+		DBPath:     cmp.Or(os.Getenv("DB_FILE_NAME"), "./data.db"),
+		API: api.Config{
+			APIKey:    os.Getenv("API_KEY"),
+			PublicURL: os.Getenv("PUBLIC_URL"),
+			Generator: cmp.Or(os.Getenv("RSS_GENERATOR"), serviceName),
+		},
+		Log: logConfig{
+			Format: os.Getenv("LOG_FORMAT"),
+			OTEL:   otelLogsEnabled(),
+		},
+	}
+	var errs []error
+	for name, dest := range map[string]*bool{
+		"DB_SKIP_MIGRATIONS": &cfg.SkipMigrations,
+		"ALLOW_NO_API_KEY":   &cfg.AllowNoAPIKey,
+		"DISABLE_OPEN_API":   &cfg.DisableOpenAPI,
+		"DISABLE_SCALAR":     &cfg.DisableScalar,
+		"DISABLE_PROMETHEUS": &cfg.DisablePrometheus,
+	} {
+		if value := os.Getenv(name); value != "" {
+			parsed, err := strconv.ParseBool(value)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("invalid %s: %w", name, err))
+			}
+			*dest = parsed
+		}
+	}
+	if cfg.API.APIKey == "" && !cfg.AllowNoAPIKey {
+		errs = append(errs, errors.New("API_KEY is not set; set ALLOW_NO_API_KEY=true to run with unauthorized modification endpoints"))
+	}
+	if err := cfg.Log.Level.UnmarshalText([]byte(cmp.Or(os.Getenv("LOG_LEVEL"), "info"))); err != nil {
+		errs = append(errs, fmt.Errorf("invalid LOG_LEVEL: %w", err))
+	}
+	return cfg, errors.Join(errs...)
 }

@@ -22,8 +22,8 @@ type HealthCheckResponse struct {
 //	@Produce	json
 //	@Success	200	{object}	HealthCheckResponse
 //	@Router		/ [get]
-func (s *Server) healthCheck(w http.ResponseWriter, _ *http.Request) error {
-	writeJSON(w, http.StatusOK, HealthCheckResponse{Name: "rss-service", Version: version.String()})
+func (s *Server) healthCheck(w http.ResponseWriter, r *http.Request) error {
+	writeJSON(w, r, http.StatusOK, HealthCheckResponse{Name: "rss-service", Version: version.String()})
 	return nil
 }
 
@@ -43,7 +43,7 @@ func (s *Server) listFeeds(w http.ResponseWriter, r *http.Request) error {
 	for i := range feeds {
 		feeds[i] = s.withLink(feeds[i])
 	}
-	writeJSON(w, http.StatusOK, feeds)
+	writeJSON(w, r, http.StatusOK, feeds)
 	return nil
 }
 
@@ -74,7 +74,7 @@ func (s *Server) createFeed(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	reqlog.From(r.Context()).Info("created feed", "feedSlug", created.Slug, "payload", input)
-	writeJSON(w, http.StatusCreated, s.withLink(created))
+	writeJSON(w, r, http.StatusCreated, s.withLink(created))
 	return nil
 }
 
@@ -219,7 +219,7 @@ func (s *Server) updateFeed(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	reqlog.From(r.Context()).Info("patched feed", "feedSlug", feedSlug, "newSlug", updated.Slug, "payload", input)
-	writeJSON(w, http.StatusOK, s.withLink(updated))
+	writeJSON(w, r, http.StatusOK, s.withLink(updated))
 	return nil
 }
 

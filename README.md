@@ -110,6 +110,16 @@ Boolean values accept `1`, `true`, `0`, `false` and so on. Other standard
 `OTEL_*` variables (`OTEL_SERVICE_NAME`, `OTEL_RESOURCE_ATTRIBUTES`,
 `OTEL_EXPORTER_OTLP_HEADERS`, etc.) are supported as well.
 
+### Exit codes
+
+| Code | Meaning                                                   |
+| ---- | --------------------------------------------------------- |
+| `1`  | Unclassified runtime failure                              |
+| `2`  | Invalid command line usage                                |
+| `3`  | Invalid configuration (env variables, logging setup)      |
+| `4`  | Failed to open the database or apply migrations           |
+| `5`  | Failed to listen or to shut the server down gracefully    |
+
 ### OpenTelemetry
 
 OpenTelemetry log export is enabled by providing either

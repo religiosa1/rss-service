@@ -75,7 +75,9 @@ func serve(rw *httpstatus.Writer, r *http.Request, next http.Handler, logger *sl
 		}
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusInternalServerError)
-		_, _ = rw.Write([]byte(`{"success":false,"status":500,"message":"Internal Server Error"}`))
+		if _, err := rw.Write([]byte(`{"success":false,"status":500,"message":"Internal Server Error"}`)); err != nil {
+			logger.Warn("error writing response", "err", err)
+		}
 	}()
 	next.ServeHTTP(rw, r)
 }

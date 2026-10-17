@@ -71,8 +71,7 @@ func validationError(part string, err error) error {
 }
 
 func collectIssues(path []any, err error) []Issue {
-	var errs validation.Errors
-	if errors.As(err, &errs) {
+	if errs, ok := errors.AsType[validation.Errors](err); ok {
 		var issues []Issue
 		for _, key := range slices.Sorted(maps.Keys(errs)) {
 			var segment any = key
@@ -83,8 +82,7 @@ func collectIssues(path []any, err error) []Issue {
 		}
 		return issues
 	}
-	var validationErr validation.Error
-	if errors.As(err, &validationErr) {
+	if validationErr, ok := errors.AsType[validation.Error](err); ok {
 		return []Issue{{Code: validationErr.Code(), Path: path, Message: validationErr.Error()}}
 	}
 	return nil
@@ -92,14 +90,12 @@ func collectIssues(path []any, err error) []Issue {
 
 // decodeError converts JSON decoding errors of the request body to a 400 error.
 func decodeError(err error) error {
-	var maxBytesErr *http.MaxBytesError
-	if errors.As(err, &maxBytesErr) {
+	if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
 		return newError(http.StatusRequestEntityTooLarge, "Request body is too large")
 	}
 	path := []any{"body"}
 	code := "invalid_json"
-	var typeErr *json.UnmarshalTypeError
-	if errors.As(err, &typeErr) {
+	if typeErr, ok := errors.AsType[*json.UnmarshalTypeError](err); ok {
 		code = "invalid_type"
 		if typeErr.Field != "" {
 			for segment := range strings.SplitSeq(typeErr.Field, ".") {
@@ -115,11 +111,11 @@ func decodeError(err error) error {
 }
 
 func writeError(w http.ResponseWriter, r *http.Request, err error) {
-	var httpErr *httpError
-	var tooOldErr *store.TooOldError
+	httpErr, isHTTPErr := errors.AsType[*httpError](err)
+	tooOldErr, isTooOld := errors.AsType[*store.TooOldError](err)
 	switch {
-	case errors.As(err, &httpErr):
-	case errors.As(err, &tooOldErr):
+	case isHTTPErr:
+	case isTooOld:
 		httpErr = newError(http.StatusUnprocessableEntity,
 			"Items are older than the feed archive and would be removed right away: %s", strings.Join(tooOldErr.Slugs, ", "))
 	case errors.Is(err, store.ErrNotFound):
@@ -134,15 +130,17 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 
 	response := ErrorResponse{Status: httpErr.status, Message: httpErr.message}
 	if httpErr.issues != nil {
-		writeJSON(w, httpErr.status, ValidationErrorResponse{ErrorResponse: response, Error: ValidationDetails{httpErr.issues}})
+		writeJSON(w, r, httpErr.status, ValidationErrorResponse{ErrorResponse: response, Error: ValidationDetails{httpErr.issues}})
 		return
 	}
-	writeJSON(w, httpErr.status, response)
+	writeJSON(w, r, httpErr.status, response)
 }
 
-func writeJSON(w http.ResponseWriter, status int, body any) {
+func writeJSON(w http.ResponseWriter, r *http.Request, status int, body any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	// headers are already sent, nothing to do on error
-	_ = json.NewEncoder(w).Encode(body)
+	if err := json.NewEncoder(w).Encode(body); err != nil {
+		// status is already sent, so it can't become an error response
+		reqlog.From(r.Context()).Warn("error writing response", "err", err)
+	}
 }

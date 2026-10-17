@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/religiosa1/rss-service/internal/docs"
+	"github.com/religiosa1/rss-service/internal/reqlog"
 )
 
 // scalarPage is the Scalar web-UI to see and test the API. The script is
@@ -33,14 +34,19 @@ const scalarPage = `<!doctype html>
 // optionally, the Scalar UI.
 func registerDocs(mux *http.ServeMux, withScalar bool) {
 	spec := []byte(docs.SwaggerInfo.ReadDoc())
-	mux.HandleFunc("GET /openapi", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write(spec)
+	mux.HandleFunc("GET /openapi", func(w http.ResponseWriter, r *http.Request) {
+		writeStatic(w, r, "application/json", spec)
 	})
 	if withScalar {
-		mux.HandleFunc("GET /scalar", func(w http.ResponseWriter, _ *http.Request) {
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			_, _ = w.Write([]byte(scalarPage))
+		mux.HandleFunc("GET /scalar", func(w http.ResponseWriter, r *http.Request) {
+			writeStatic(w, r, "text/html; charset=utf-8", []byte(scalarPage))
 		})
+	}
+}
+
+func writeStatic(w http.ResponseWriter, r *http.Request, contentType string, body []byte) {
+	w.Header().Set("Content-Type", contentType)
+	if _, err := w.Write(body); err != nil {
+		reqlog.From(r.Context()).Warn("error writing response", "err", err)
 	}
 }

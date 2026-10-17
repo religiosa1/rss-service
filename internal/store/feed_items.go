@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"slices"
 	"strings"
 	"time"
@@ -166,8 +167,7 @@ func (db *DB) inTx(ctx context.Context, fn func(tx *sqlx.Tx) error) error {
 		return err
 	}
 	if err := fn(tx); err != nil {
-		_ = tx.Rollback()
-		return err
+		return errors.Join(err, tx.Rollback())
 	}
 	return tx.Commit()
 }
